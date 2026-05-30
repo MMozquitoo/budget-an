@@ -47,6 +47,14 @@ const html = `<!DOCTYPE html>
   .confidence.partial { background: #fef3c7; color: #92400e; }
   .confidence.guess { background: #fee2e2; color: #991b1b; }
   .footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 8.5pt; color: #9ca3af; text-align: center; }
+  tr { page-break-inside: avoid; }
+  .kpi-row { page-break-inside: avoid; }
+  .question-box { page-break-inside: avoid; }
+  .highlight { page-break-inside: avoid; }
+  .warning { page-break-inside: avoid; }
+  .note-red { page-break-inside: avoid; }
+  .tab-card { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
 </style>
 </head>
 <body>
@@ -159,8 +167,6 @@ const html = `<!DOCTYPE html>
 <div class="warning">
   <strong>Le taux de 35% est un placeholder.</strong> Le vrai taux d&eacute;pend de la structure juridique de Make Commerce AN Group et doit &ecirc;tre valid&eacute; par un expert-comptable. Ce chiffre ne constitue pas un calcul fiscal &mdash; c'est une estimation de mise de c&ocirc;t&eacute;.
 </div>
-
-<div class="page-break"></div>
 
 <h2>3. Ce que le syst&egrave;me inf&egrave;re aujourd'hui</h2>
 <p>Inferences bas&eacute;es exclusivement sur les donn&eacute;es import&eacute;es. Chaque conclusion est accompagn&eacute;e de son niveau de confiance.</p>
