@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     householdExpenses,
     revenues,
     businessExpenses,
+    personalIncomes,
     timeEntries,
     wealthSnapshot,
     previousSnapshot,
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
       include: { businessLine: true },
     }),
     prisma.businessExpense.findMany({ where: { date: dateFilter } }),
+    prisma.personalIncome.findMany({ where: { date: dateFilter } }),
     prisma.timeEntry.findMany({
       where: { date: dateFilter },
       include: { businessLine: true },
@@ -69,6 +71,11 @@ export async function GET(request: NextRequest) {
   ]);
 
   // Current month totals
+  const personalIncome = personalIncomes.reduce(
+    (sum, e) => sum + Number(e.amount),
+    0
+  );
+
   const personalBurn = householdExpenses.reduce(
     (sum, e) => sum + Number(e.amount),
     0
@@ -225,6 +232,7 @@ export async function GET(request: NextRequest) {
       investments > 0 || debt > 0 || butterflyValue > 0);
 
   return Response.json({
+    personalIncome,
     personalBurn,
     businessRevenue,
     businessExpenses: businessExpensesTotal,
