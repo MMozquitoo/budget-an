@@ -47,6 +47,24 @@ const html = `<!DOCTYPE html>
   .confidence.partial { background: #fef3c7; color: #92400e; }
   .confidence.guess { background: #fee2e2; color: #991b1b; }
   .footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 8.5pt; color: #9ca3af; text-align: center; }
+  .arch-box { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 10px 0; page-break-inside: avoid; }
+  .arch-box .title { font-weight: 700; color: #312e81; font-size: 11pt; margin-bottom: 6px; }
+  .arch-box .desc { font-size: 9.5pt; color: #4b5563; }
+  .arch-flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 0; font-size: 9pt; color: #6366f1; font-weight: 600; page-break-inside: avoid; }
+  .arch-flow .arrow { font-size: 14pt; }
+  .arch-flow .step { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 6px 10px; text-align: center; }
+  .security-box { background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 14px; margin: 10px 0; page-break-inside: avoid; }
+  .security-box .icon { font-size: 13pt; margin-right: 6px; }
+  .security-box strong { color: #166534; }
+  .phase-box { background: #fff; border-left: 4px solid #6366f1; padding: 12px 14px; margin: 8px 0; border-radius: 0 8px 8px 0; page-break-inside: avoid; }
+  .phase-box .phase-num { font-size: 20pt; font-weight: 700; color: #c7d2fe; float: left; margin-right: 12px; line-height: 1; }
+  .phase-box .phase-title { font-weight: 600; color: #312e81; font-size: 10.5pt; }
+  .phase-box .phase-detail { font-size: 9.5pt; color: #4b5563; margin-top: 3px; }
+  .phase-box .phase-tech { font-size: 8.5pt; color: #6366f1; margin-top: 4px; font-style: italic; }
+  .cost-row { display: flex; gap: 10px; margin: 10px 0; page-break-inside: avoid; }
+  .cost-item { flex: 1; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; }
+  .cost-item .cost-val { font-size: 14pt; font-weight: 700; color: #059669; }
+  .cost-item .cost-label { font-size: 8.5pt; color: #6b7280; margin-top: 2px; }
   tr { page-break-inside: avoid; }
   .kpi-row { page-break-inside: avoid; }
   .question-box { page-break-inside: avoid; }
@@ -294,6 +312,141 @@ const html = `<!DOCTYPE html>
 
 <div class="highlight" style="margin-top: 24px;">
   <strong>Le syst&egrave;me ne demande pas de tout tracker.</strong> Il demande de tracker ce qui compte : o&ugrave; va le temps, d'o&ugrave; vient l'argent, et combien de mois de libert&eacute; restent. Le reste est du bruit.
+</div>
+
+<h2>6. Plan d'impl&eacute;mentation &mdash; Synchronisation bancaire automatique</h2>
+
+<p>Le syst&egrave;me actuel s'arr&ecirc;te &agrave; octobre 2025 car les donn&eacute;es sont import&eacute;es manuellement. L'objectif est d'avoir les donn&eacute;es bancaires <strong>synchronis&eacute;es automatiquement chaque jour</strong>, de mani&egrave;re s&eacute;curis&eacute;e et autonome.</p>
+
+<h3>Architecture propos&eacute;e</h3>
+
+<div class="arch-flow">
+  <div class="step">Boursorama<br>N26 &bull; SG<br>LCL &bull; CIC</div>
+  <div class="arrow">&rarr;</div>
+  <div class="step">Woob<br>(connecteur)</div>
+  <div class="arrow">&rarr;</div>
+  <div class="step">Classifieur<br>auto</div>
+  <div class="arrow">&rarr;</div>
+  <div class="step">API<br>Budget AN</div>
+  <div class="arrow">&rarr;</div>
+  <div class="step">Dashboard<br>+ Rapport</div>
+</div>
+
+<p><strong>Woob</strong> (Web Outside of Browsers) est une biblioth&egrave;que open-source fran&ccedil;aise qui se connecte directement aux portails bancaires. Elle prend en charge les 5 banques d'Adrien. Aucune souscription &mdash; gratuit, self-hosted, code ouvert.</p>
+
+<h3>D&eacute;roulement en 5 phases</h3>
+
+<div class="phase-box">
+  <div class="phase-num">1</div>
+  <div class="phase-title">Infrastructure s&eacute;curis&eacute;e</div>
+  <div class="phase-detail">Provisionner un VPS d&eacute;di&eacute; (Hetzner, OVH ou Scaleway) sous Linux avec acc&egrave;s restreint par cl&eacute; SSH uniquement. Le serveur h&eacute;berge Woob et un service de synchronisation &mdash; rien d'autre. Isol&eacute; du serveur web de Budget AN.</div>
+  <div class="phase-tech">Ubuntu 24 &bull; Docker &bull; Pare-feu UFW &bull; Acc&egrave;s SSH par cl&eacute; uniquement &bull; ~5 &euro;/mois</div>
+</div>
+
+<div class="phase-box">
+  <div class="phase-num">2</div>
+  <div class="phase-title">Connexion aux 5 banques via Woob</div>
+  <div class="phase-detail">Installer Woob et configurer un &laquo; backend &raquo; pour chaque banque : Boursorama, N26, SG, LCL, CIC. Chaque backend re&ccedil;oit les identifiants bancaires chiffr&eacute;s (AES-256) stock&eacute;s localement. Test de r&eacute;cup&eacute;ration de l'historique des transactions pour chaque compte.</div>
+  <div class="phase-tech">Python 3.12 &bull; woob-bank &bull; Modules : bnporc, n26, societegenerale, lcl, cic &bull; Config chiffr&eacute;e via GPG</div>
+</div>
+
+<div class="phase-box">
+  <div class="phase-num">3</div>
+  <div class="phase-title">Classification automatique des transactions</div>
+  <div class="phase-detail">Chaque transaction est class&eacute;e automatiquement en fonction du compte d'origine (perso vs business), du libell&eacute; et du montant. R&egrave;gles :</div>
+</div>
+
+<table>
+  <tr><th>R&egrave;gle</th><th>Cat&eacute;gorie</th><th>Exemple</th></tr>
+  <tr><td>Compte Make Commerce AN Group</td><td>Business revenue / expense</td><td>Virement client Street Kred</td></tr>
+  <tr><td>Comptes perso (Bourso, N26, SG, LCL)</td><td>Household expense</td><td>Carrefour, EDF, loyer</td></tr>
+  <tr><td>Libell&eacute; contient &laquo; PRLV &raquo; + pr&ecirc;t immo</td><td>Charges immobili&egrave;res</td><td>Mensualit&eacute; SCI Abondant</td></tr>
+  <tr><td>Virement Make Commerce &rarr; Perso</td><td>Owner draw</td><td>Virement salaire</td></tr>
+  <tr><td>P&ocirc;le Emploi / France Travail</td><td>Revenu personnel (allocations)</td><td>VIR FRANCE TRAVAIL</td></tr>
+  <tr><td>Icon / employeur</td><td>Revenu personnel (salaire)</td><td>VIR ICON SAS</td></tr>
+  <tr><td>Mots-cl&eacute;s : restaurant, uber, taxi</td><td>Variable (lifestyle)</td><td>UBER EATS, REST LE PETIT</td></tr>
+  <tr><td>Voyages : booking, airbnb, sncf</td><td>Voyages famille</td><td>BOOKING.COM, SNCF</td></tr>
+  <tr><td>Nicolas (mot-cl&eacute; d&eacute;fini)</td><td>Nicolas</td><td>Transfert Nicolas</td></tr>
+  <tr><td>Non reconnu</td><td>&Agrave; classifier manuellement</td><td>Alerte envoy&eacute;e</td></tr>
+</table>
+
+<div class="warning">
+  <strong>Pr&eacute;cision attendue :</strong> ~85-90% des transactions seront classifi&eacute;es automatiquement d&egrave;s le d&eacute;part. Les transactions non reconnues sont mises en file d'attente pour classification manuelle (une notification est envoy&eacute;e). Le syst&egrave;me apprend des corrections pour am&eacute;liorer la pr&eacute;cision au fil du temps.
+</div>
+
+<div class="phase-box">
+  <div class="phase-num">4</div>
+  <div class="phase-title">Synchronisation quotidienne avec Budget AN</div>
+  <div class="phase-detail">Un cron job s'ex&eacute;cute chaque nuit &agrave; 3h du matin. Il r&eacute;cup&egrave;re les nouvelles transactions depuis la derni&egrave;re synchronisation, les classifie, et les envoie vers l'API de Budget AN via HTTPS. Les soldes bancaires sont &eacute;galement mis &agrave; jour automatiquement dans l'onglet Wealth.</div>
+  <div class="phase-tech">Cron &bull; HTTPS POST vers /api/* &bull; D&eacute;duplication par ID de transaction &bull; Logs de synchronisation</div>
+</div>
+
+<div class="phase-box">
+  <div class="phase-num">5</div>
+  <div class="phase-title">Rapport dynamique temps r&eacute;el</div>
+  <div class="phase-detail">Le rapport PDF statique est remplac&eacute; par une page /report qui g&eacute;n&egrave;re le rapport &agrave; la vol&eacute;e depuis les donn&eacute;es de la base. Toujours &agrave; jour, toujours accessible au m&ecirc;me lien. Bouton &laquo; T&eacute;l&eacute;charger PDF &raquo; disponible.</div>
+  <div class="phase-tech">Next.js page &bull; CSS @media print &bull; window.print() &bull; Donn&eacute;es en temps r&eacute;el depuis la DB</div>
+</div>
+
+<h3>S&eacute;curit&eacute; des donn&eacute;es &mdash; Architecture z&eacute;ro compromis</h3>
+
+<p>Les donn&eacute;es financi&egrave;res sont extr&ecirc;mement sensibles. Voici comment chaque couche est prot&eacute;g&eacute;e :</p>
+
+<div class="security-box">
+  <strong>Identifiants bancaires</strong><br>
+  Chiffr&eacute;s au repos avec GPG/AES-256. Jamais stock&eacute;s en clair, jamais transmis sur le r&eacute;seau, jamais dans le code source ni dans Git. Seul le processus Woob sur le VPS peut les d&eacute;chiffrer, et uniquement au moment de la synchronisation.
+</div>
+
+<div class="security-box">
+  <strong>VPS isol&eacute; et durci</strong><br>
+  Acc&egrave;s uniquement par cl&eacute; SSH (pas de mot de passe). Pare-feu UFW : seul le port SSH et les requ&ecirc;tes sortantes vers les banques et l'API Budget AN sont autoris&eacute;s. Aucun port entrant ouvert au public. Mises &agrave; jour automatiques (unattended-upgrades).
+</div>
+
+<div class="security-box">
+  <strong>Transit des donn&eacute;es</strong><br>
+  Toutes les communications VPS &rarr; Budget AN passent par HTTPS (TLS 1.3). Les transactions sont envoy&eacute;es via une cl&eacute; API secr&egrave;te stock&eacute;e en variable d'environnement. Aucun interm&eacute;diaire tiers : VPS &rarr; Vercel directement.
+</div>
+
+<div class="security-box">
+  <strong>Donn&eacute;es au repos (base de donn&eacute;es)</strong><br>
+  La base de donn&eacute;es sur Vercel est chiffr&eacute;e au repos par d&eacute;faut (encryption at rest). Les backups automatiques sont activ&eacute;s. Aucune donn&eacute;e financi&egrave;re n'est stock&eacute;e c&ocirc;t&eacute; client (navigateur) &mdash; tout est server-side.
+</div>
+
+<div class="security-box">
+  <strong>Acc&egrave;s au dashboard</strong><br>
+  L'application Budget AN est prot&eacute;g&eacute;e par authentification. Seul Adrien y a acc&egrave;s. Les tokens de session expirent apr&egrave;s 24h d'inactivit&eacute;. Pas de donn&eacute;es expos&eacute;es publiquement.
+</div>
+
+<div class="security-box">
+  <strong>Audit et monitoring</strong><br>
+  Chaque synchronisation est logu&eacute;e avec : timestamp, nombre de transactions, statut. En cas d'&eacute;chec (banque indisponible, erreur d'auth), une alerte est envoy&eacute;e par email. Historique complet des syncs accessible dans l'admin.
+</div>
+
+<h3>Co&ucirc;t mensuel de la solution</h3>
+
+<div class="cost-row">
+  <div class="cost-item"><div class="cost-val">5 &euro;</div><div class="cost-label">VPS (Hetzner CX22)</div></div>
+  <div class="cost-item"><div class="cost-val">0 &euro;</div><div class="cost-label">Woob (open-source)</div></div>
+  <div class="cost-item"><div class="cost-val">0 &euro;</div><div class="cost-label">Vercel (plan actuel)</div></div>
+  <div class="cost-item"><div class="cost-val">5 &euro;/mois</div><div class="cost-label">Co&ucirc;t total</div></div>
+</div>
+
+<div class="highlight" style="margin-top: 16px;">
+  <strong>R&eacute;sultat final :</strong> Chaque matin, Budget AN a les transactions de la veille. Le dashboard Freedom affiche un runway &agrave; jour. Le rapport est toujours actuel. Adrien n'a rien &agrave; faire &mdash; le syst&egrave;me tourne tout seul. Il intervient uniquement pour classifier les ~10-15% de transactions non reconnues (notification push) et pour renseigner les donn&eacute;es que les banques ne fournissent pas (pipeline, d&eacute;cisions strat&eacute;giques, valeur de Butterfly).
+</div>
+
+<h3>Planning pr&eacute;visionnel</h3>
+
+<table>
+  <tr><th>Semaine</th><th>Phase</th><th>Livrable</th></tr>
+  <tr><td>S1</td><td>Infrastructure + Woob</td><td>VPS s&eacute;curis&eacute;, Woob connect&eacute; aux 5 banques, premier pull de transactions</td></tr>
+  <tr><td>S2</td><td>Classification + API</td><td>R&egrave;gles de classification, int&eacute;gration API Budget AN, sync manuelle fonctionnelle</td></tr>
+  <tr><td>S3</td><td>Automatisation + Rapport</td><td>Cron quotidien, alertes, page /report dynamique, tests de bout en bout</td></tr>
+  <tr><td>S4</td><td>Rattrapage + Go live</td><td>Import des transactions Nov 2025 &rarr; aujourd'hui, validation avec Adrien, mise en production</td></tr>
+</table>
+
+<div class="highlight" style="margin-top: 16px;">
+  <strong>Apr&egrave;s la semaine 4 :</strong> Budget AN passe d'un syst&egrave;me &agrave; alimentation manuelle &agrave; un syst&egrave;me autonome. La question &laquo; Suis-je plus libre aujourd'hui ? &raquo; aura une r&eacute;ponse actualis&eacute;e chaque matin.
 </div>
 
 <div class="footer">
