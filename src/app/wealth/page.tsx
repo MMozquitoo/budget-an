@@ -59,7 +59,7 @@ export default function WealthPage() {
   function fetchSnapshots() {
     setLoading(true);
     fetch("/api/wealth-snapshots")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
       .then(setSnapshots)
       .finally(() => setLoading(false));
   }

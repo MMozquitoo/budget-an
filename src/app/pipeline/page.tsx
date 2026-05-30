@@ -60,8 +60,8 @@ export default function PipelinePage() {
   function reload() {
     setLoading(true);
     Promise.all([
-      fetch("/api/pipeline-opportunities").then((r) => r.json()),
-      fetch("/api/business-lines").then((r) => r.json()),
+      fetch("/api/pipeline-opportunities").then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
+      fetch("/api/business-lines").then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
     ])
       .then(([ops, bl]) => {
         setOpportunities(ops);

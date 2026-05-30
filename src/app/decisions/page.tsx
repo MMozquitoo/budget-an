@@ -112,21 +112,21 @@ export default function DecisionsPage() {
   function fetchDecisions() {
     setLoading(true);
     fetch("/api/decisions")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
       .then(setDecisions)
       .finally(() => setLoading(false));
   }
 
   function fetchBusinessLines() {
     fetch("/api/business-lines")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
       .then(setBusinessLines)
       .catch(() => setBusinessLines([]));
   }
 
   function fetchEvents() {
     fetch("/api/events")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
       .then(setEvents)
       .catch(() => setEvents([]));
   }

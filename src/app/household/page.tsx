@@ -51,7 +51,7 @@ export default function HouseholdPage() {
   const fetchExpenses = () => {
     setLoading(true);
     fetch(`/api/household-expenses?month=${month}&year=${year}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
       .then(setExpenses)
       .finally(() => setLoading(false));
   };

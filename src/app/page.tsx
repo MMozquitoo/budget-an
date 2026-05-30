@@ -86,21 +86,36 @@ export default function FreedomDashboard() {
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (month === null || year === null) {
       fetch("/api/freedom/latest")
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error("API unavailable");
+          return r.json();
+        })
         .then((d) => {
           setMonth(d.month || getCurrentMonth());
           setYear(d.year || getCurrentYear());
+        })
+        .catch(() => {
+          setMonth(getCurrentMonth());
+          setYear(getCurrentYear());
+          setError("No database connected. The app needs a PostgreSQL database with data to display dashboards.");
+          setLoading(false);
         });
       return;
     }
     setLoading(true);
+    setError(null);
     fetch(`/api/freedom?month=${month}&year=${year}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("API error");
+        return r.json();
+      })
       .then(setData)
+      .catch(() => setError("No database connected. The app needs a PostgreSQL database with data to display dashboards."))
       .finally(() => setLoading(false));
   }, [month, year]);
 
@@ -108,6 +123,26 @@ export default function FreedomDashboard() {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-20">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center max-w-lg">
+          <h2 className="text-lg font-semibold text-amber-800 mb-2">Database not connected</h2>
+          <p className="text-sm text-amber-700 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">
+            Download the client report instead:
+          </p>
+          <a
+            href="/Budget_AN_Report_Adrien_Naeem.pdf"
+            className="mt-3 inline-block rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Download PDF Report
+          </a>
+        </div>
       </div>
     );
   }

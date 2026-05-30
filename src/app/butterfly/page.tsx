@@ -103,11 +103,11 @@ export default function ButterflyPage() {
   function reload() {
     setLoading(true);
     Promise.all([
-      fetch(`/api/revenues?month=${month}&year=${year}`).then((r) => r.json()),
-      fetch(`/api/business-expenses?month=${month}&year=${year}`).then((r) => r.json()),
-      fetch("/api/business-lines").then((r) => r.json()),
-      fetch("/api/events?status=COMPLETED").then((r) => r.json()),
-      fetch(`/api/time-entries?month=${month}&year=${year}`).then((r) => r.json()),
+      fetch(`/api/revenues?month=${month}&year=${year}`).then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
+      fetch(`/api/business-expenses?month=${month}&year=${year}`).then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
+      fetch("/api/business-lines").then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
+      fetch("/api/events?status=COMPLETED").then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
+      fetch(`/api/time-entries?month=${month}&year=${year}`).then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); }),
     ])
       .then(([rev, exp, bl, ev, te]) => {
         setRevenues(rev);
