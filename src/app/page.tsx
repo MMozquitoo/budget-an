@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrendsChart, SummaryChart, NetWorthChart } from "@/components/ChatCharts";
 
 const SUGGESTIONS = [
   { icon: Receipt, text: "Résumé du mois", color: "text-blue-600 bg-blue-50" },
@@ -119,12 +120,16 @@ export default function ChatPage() {
                           );
                         }
                         if (part.type.startsWith("tool-")) {
-                          const p = part as { toolCallId: string; toolName?: string; state?: string };
-                          if (p.state === "result") return null;
+                          const p = part as { type: string; toolCallId: string; toolName?: string; state?: string; output?: any };
+                          const toolName = p.toolName || part.type.replace("tool-", "");
+                          if (p.state === "output-available" && p.output) {
+                            return renderToolChart(toolName, p.output, i);
+                          }
+                          if (p.state === "output-available") return null;
                           return (
                             <div key={i} className="my-1.5 flex items-center gap-1.5 text-xs text-gray-400">
                               <Loader2 className="h-3 w-3 animate-spin" />
-                              {toolLabel(p.toolName || "unknown")}
+                              {toolLabel(toolName)}
                             </div>
                           );
                         }
@@ -186,6 +191,19 @@ export default function ChatPage() {
       </div>
     </div>
   );
+}
+
+function renderToolChart(toolName: string, output: any, key: number) {
+  if (toolName === "getTrends" && Array.isArray(output) && output.length >= 2) {
+    return <TrendsChart key={key} data={output} />;
+  }
+  if (toolName === "getSummary" && output?.byGroup) {
+    return <SummaryChart key={key} data={output} />;
+  }
+  if (toolName === "getNetWorth" && Array.isArray(output) && output.length >= 2) {
+    return <NetWorthChart key={key} data={output} />;
+  }
+  return null;
 }
 
 function toolLabel(name: string): string {
