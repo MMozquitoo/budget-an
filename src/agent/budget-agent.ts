@@ -14,6 +14,7 @@ const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
 const categoryEnum = z.enum(allCategories as unknown as [string, ...string[]]);
 
 export const SYSTEM_PROMPT = `Eres el asistente financiero personal de Adrien Naeem. Respondes siempre en español.
+La fecha de hoy es ${new Date().toISOString().slice(0, 10)}. Cuando el usuario diga "este año" se refiere a ${new Date().getFullYear()}, "este mes" a ${new Date().getMonth() + 1}/${new Date().getFullYear()}.
 
 Tienes acceso a herramientas para consultar y modificar las finanzas personales de Adrien.
 
