@@ -28,8 +28,8 @@ interface Snapshot {
 }
 
 const MONTH_NAMES = [
-  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+  "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+  "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
 ];
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -40,23 +40,23 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="font-semibold text-gray-900 mb-2">{label}</p>
       <div className="space-y-1">
         <div className="flex justify-between gap-6">
-          <span className="text-gray-500">Efectivo</span>
+          <span className="text-gray-500">Liquidités</span>
           <span className="font-medium">{formatCurrency(d.cash)}</span>
         </div>
         <div className="flex justify-between gap-6">
-          <span className="text-gray-500">Ahorro</span>
+          <span className="text-gray-500">Épargne</span>
           <span className="font-medium">{formatCurrency(d.savings)}</span>
         </div>
         <div className="flex justify-between gap-6">
-          <span className="text-gray-500">Inversiones</span>
+          <span className="text-gray-500">Investissements</span>
           <span className="font-medium">{formatCurrency(d.investments)}</span>
         </div>
         <div className="flex justify-between gap-6">
-          <span className="text-gray-500">Propiedad</span>
+          <span className="text-gray-500">Immobilier</span>
           <span className="font-medium">{formatCurrency(d.property)}</span>
         </div>
         <div className="flex justify-between gap-6 text-red-600">
-          <span>Deudas</span>
+          <span>Dettes</span>
           <span className="font-medium">-{formatCurrency(d.debt)}</span>
         </div>
         <div className="border-t border-gray-100 pt-1 flex justify-between gap-6 font-semibold">
@@ -142,9 +142,9 @@ export default function NetWorthPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Patrimonio neto</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Patrimoine net</h1>
           <p className="text-sm text-gray-500">
-            Evolución de tus activos y deudas
+            Évolution de tes actifs et dettes
           </p>
         </div>
         <button
@@ -152,7 +152,7 @@ export default function NetWorthPage() {
           className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           <Plus className="h-4 w-4" />
-          Agregar mes
+          Ajouter un mois
         </button>
       </div>
 
@@ -160,13 +160,13 @@ export default function NetWorthPage() {
       {latest && (
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Patrimonio actual</p>
+            <p className="text-sm text-gray-500">Patrimoine actuel</p>
             <p className={cn("text-2xl font-bold", latest.total >= 0 ? "text-emerald-600" : "text-red-600")}>
               {formatCurrency(latest.total)}
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Cambio vs mes anterior</p>
+            <p className="text-sm text-gray-500">Variation vs mois précédent</p>
             <div className="flex items-center gap-2">
               {change >= 0 ? (
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
@@ -179,7 +179,7 @@ export default function NetWorthPage() {
             </div>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">Deuda total</p>
+            <p className="text-sm text-gray-500">Dette totale</p>
             <p className="text-2xl font-bold text-red-600">
               {formatCurrency(latest.debt)}
             </p>
@@ -191,11 +191,11 @@ export default function NetWorthPage() {
       {showForm && (
         <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            Registrar snapshot mensual
+            Enregistrer un snapshot mensuel
           </h3>
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Mes</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Mois</label>
               <select
                 value={form.month}
                 onChange={(e) => setForm({ ...form, month: Number(e.target.value) })}
@@ -207,7 +207,7 @@ export default function NetWorthPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Año</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Année</label>
               <input
                 type="number"
                 value={form.year}
@@ -216,7 +216,7 @@ export default function NetWorthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Efectivo</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Liquidités</label>
               <input
                 type="number"
                 step="0.01"
@@ -227,7 +227,7 @@ export default function NetWorthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Ahorro</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Épargne</label>
               <input
                 type="number"
                 step="0.01"
@@ -238,7 +238,7 @@ export default function NetWorthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Inversiones</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Investissements</label>
               <input
                 type="number"
                 step="0.01"
@@ -249,7 +249,7 @@ export default function NetWorthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Propiedad</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Immobilier</label>
               <input
                 type="number"
                 step="0.01"
@@ -260,7 +260,7 @@ export default function NetWorthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Deudas</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Dettes</label>
               <input
                 type="number"
                 step="0.01"
@@ -271,10 +271,10 @@ export default function NetWorthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Notas</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
               <input
                 type="text"
-                placeholder="Opcional"
+                placeholder="Optionnel"
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
@@ -285,14 +285,14 @@ export default function NetWorthPage() {
                 type="submit"
                 className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-700"
               >
-                Guardar
+                Enregistrer
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Cancelar
+                Annuler
               </button>
             </div>
           </form>
@@ -303,7 +303,7 @@ export default function NetWorthPage() {
       {chartData.length >= 2 && (
         <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Evolución del patrimonio
+            Évolution du patrimoine
           </h2>
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -335,12 +335,12 @@ export default function NetWorthPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-500">Periodo</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Efectivo</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Ahorro</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Inversiones</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Propiedad</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Deudas</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Période</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Liquidités</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Épargne</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Investissements</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Immobilier</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Dettes</th>
                   <th className="px-4 py-3 font-medium text-gray-500 text-right">Total</th>
                   <th className="px-4 py-3"></th>
                 </tr>
@@ -379,10 +379,10 @@ export default function NetWorthPage() {
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
           <TrendingUp className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-600">
-            Sin datos de patrimonio
+            Aucune donnée patrimoniale
           </h3>
           <p className="mt-2 text-sm text-gray-400">
-            Agrega tu primer snapshot mensual para comenzar a trackear tu patrimonio.
+            Ajoute ton premier snapshot mensuel pour commencer à suivre ton patrimoine.
           </p>
         </div>
       )}

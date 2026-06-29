@@ -178,9 +178,9 @@ function TransactionsContent() {
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Movimientos</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Opérations</h1>
           <p className="text-sm text-gray-500">
-            Registra y clasifica tus ingresos, gastos y ahorro
+            Enregistre et classe tes revenus, dépenses et épargne
           </p>
         </div>
         <div className="flex gap-2">
@@ -251,7 +251,7 @@ function TransactionsContent() {
               className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800"
             >
               <ArrowLeft className="h-4 w-4" />
-              Todos
+              Tous
             </button>
             <span className="text-sm text-gray-400">/</span>
             <span className="text-sm font-medium text-gray-700">
@@ -276,7 +276,7 @@ function TransactionsContent() {
                   : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
               )}
             >
-              Todas ({transactions.length})
+              Toutes ({transactions.length})
             </button>
             {activeCats.map((cat) => {
               const catAmt = categoryTotals[cat] || 0;
@@ -305,7 +305,7 @@ function TransactionsContent() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
-            {filterCategory !== "ALL" ? CATEGORY_LABELS[filterCategory] : filterGroup === "ALL" ? "Todos los movimientos" : GROUP_LABELS[filterGroup]}
+            {filterCategory !== "ALL" ? CATEGORY_LABELS[filterCategory] : filterGroup === "ALL" ? "Toutes les opérations" : GROUP_LABELS[filterGroup]}
             <span className="ml-2 text-sm font-normal text-gray-400">
               ({filtered.length}) &middot; Total: {formatCurrency(total)}
             </span>
@@ -321,11 +321,11 @@ function TransactionsContent() {
           >
             {showForm ? (
               <>
-                <X className="h-4 w-4" /> Cancelar
+                <X className="h-4 w-4" /> Annuler
               </>
             ) : (
               <>
-                <Plus className="h-4 w-4" /> Agregar
+                <Plus className="h-4 w-4" /> Ajouter
               </>
             )}
           </button>
@@ -340,7 +340,7 @@ function TransactionsContent() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Fecha
+                  Date
                 </label>
                 <input
                   type="date"
@@ -352,7 +352,7 @@ function TransactionsContent() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Monto
+                  Montant
                 </label>
                 <input
                   type="number"
@@ -367,7 +367,7 @@ function TransactionsContent() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Grupo
+                  Groupe
                 </label>
                 <select
                   value={formGroup}
@@ -383,7 +383,7 @@ function TransactionsContent() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Categoría
+                  Catégorie
                 </label>
                 <select
                   value={formCategory}
@@ -399,12 +399,12 @@ function TransactionsContent() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Descripción
+                  Description
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Arriendo junio"
+                  placeholder="Ex : Loyer juin"
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
@@ -412,11 +412,11 @@ function TransactionsContent() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Notas (opcional)
+                  Notes (optionnel)
                 </label>
                 <input
                   type="text"
-                  placeholder="Detalle adicional..."
+                  placeholder="Détail supplémentaire..."
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
@@ -431,14 +431,14 @@ function TransactionsContent() {
                   onChange={(e) => setFormRecurring(e.target.checked)}
                   className="rounded border-gray-300"
                 />
-                Recurrente
+                Récurrent
               </label>
               <button
                 type="submit"
                 disabled={submitting}
                 className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                {submitting ? "Guardando..." : "Guardar"}
+                {submitting ? "Enregistrement..." : "Enregistrer"}
               </button>
             </div>
           </form>
@@ -451,18 +451,18 @@ function TransactionsContent() {
           </div>
         ) : filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">
-            No hay movimientos este mes
+            Aucune opération ce mois
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left text-gray-500">
-                  <th className="pb-3 font-medium">Fecha</th>
-                  <th className="pb-3 font-medium">Descripción</th>
-                  <th className="pb-3 font-medium">Grupo</th>
-                  <th className="pb-3 font-medium">Categoría</th>
-                  <th className="pb-3 text-right font-medium">Monto</th>
+                  <th className="pb-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium">Description</th>
+                  <th className="pb-3 font-medium">Groupe</th>
+                  <th className="pb-3 font-medium">Catégorie</th>
+                  <th className="pb-3 text-right font-medium">Montant</th>
                   <th className="pb-3 text-right font-medium">
                     <span className="sr-only">Acciones</span>
                   </th>
@@ -474,7 +474,7 @@ function TransactionsContent() {
                   return (
                     <tr key={t.id}>
                       <td className="py-3 text-gray-500 whitespace-nowrap">
-                        {new Date(t.date).toLocaleDateString("es", {
+                        {new Date(t.date).toLocaleDateString("fr-FR", {
                           day: "numeric",
                           month: "short",
                         })}
@@ -483,7 +483,7 @@ function TransactionsContent() {
                         {t.description}
                         {t.recurring && (
                           <span className="ml-1.5 text-xs text-gray-400">
-                            (recurrente)
+                            (récurrent)
                           </span>
                         )}
                       </td>

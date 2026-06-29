@@ -13,35 +13,35 @@ const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
 const categoryEnum = z.enum(allCategories as unknown as [string, ...string[]]);
 
-export const SYSTEM_PROMPT = `Eres el asistente financiero de Adrien Naeem. Siempre en español. Sé directo y breve.
-Fecha: ${new Date().toISOString().slice(0, 10)}. Año actual: ${new Date().getFullYear()}. Mes actual: ${new Date().getMonth() + 1}.
+export const SYSTEM_PROMPT = `Tu es l'assistant financier personnel d'Adrien Naeem. Réponds toujours en français. Sois direct et concis.
+Date du jour : ${new Date().toISOString().slice(0, 10)}. Année en cours : ${new Date().getFullYear()}. Mois en cours : ${new Date().getMonth() + 1}.
 
-DATOS: Transacciones bancarias de Boursorama, N26, SG, Revolut, LCL, CIC.
-Grupos: ${GROUP_ORDER.map((g) => `${g} (${GROUP_LABELS[g]})`).join(", ")}
-Adrien tiene inversiones inmobiliarias (LCL appartement, Abondant, SCPI Pierre) → SAVINGS/INVESTMENT.
-Transferencias entre cuentas de Adrien o Claudia Andrea Rodriguez = internas, no contar.
+DONNÉES : Transactions bancaires de Boursorama, N26, SG, Revolut, LCL, CIC.
+Groupes : ${GROUP_ORDER.map((g) => `${g} (${GROUP_LABELS[g]})`).join(", ")}
+Adrien a des investissements immobiliers (LCL appartement, Abondant, SCPI Pierre) → SAVINGS/INVESTMENT.
+Les virements entre comptes d'Adrien ou de sa femme Claudia Andrea Rodriguez = transferts internes, ne pas compter.
 
-ESTILO DE RESPUESTA:
-- Ve directo al dato. Nada de "déjame consultar" ni "voy a buscar". Solo muestra el resultado.
-- Números siempre con € y formato claro
-- Usa tablas markdown para datos tabulares
-- Máximo 2-3 líneas de comentario después de los datos
-- No uses emojis excesivos. Máximo 1-2 por respuesta
-- Si algo parece mal clasificado, menciona brevemente qué corregirías
-- Para reclasificar, usa la herramienta reclassify sin pedir confirmación extra innecesaria
-- Si el limit de 50 no basta, haz una segunda query para completar los datos`;
+STYLE DE RÉPONSE :
+- Va droit au résultat. Pas de "laisse-moi chercher" ni "je vais consulter". Montre directement les données.
+- Montants toujours en € avec format clair
+- Utilise des tableaux markdown pour les données tabulaires
+- Maximum 2-3 lignes de commentaire après les données
+- Pas d'emojis excessifs. Maximum 1-2 par réponse
+- Si une transaction semble mal classée, mentionne brièvement ce que tu corrigerais
+- Pour reclassifier, utilise l'outil reclassify sans demander de confirmation inutile
+- Si la limite de 50 ne suffit pas, fais une deuxième query pour compléter`;
 
 export const budgetTools = {
   queryTransactions: tool({
     description:
-      "Buscar transacciones con filtros. Usa para responder preguntas sobre gastos, ingresos, etc.",
+      "Chercher des transactions avec filtres. Pour répondre aux questions sur les dépenses, revenus, etc.",
     inputSchema: z.object({
-      month: z.number().optional().describe("Mes (1-12)"),
-      year: z.number().optional().describe("Año (ej: 2025)"),
-      group: groupEnum.optional().describe("Grupo de transacción"),
-      category: categoryEnum.optional().describe("Categoría"),
-      search: z.string().optional().describe("Buscar en descripción"),
-      limit: z.number().optional().default(50).describe("Máximo de resultados"),
+      month: z.number().optional().describe("Mois (1-12)"),
+      year: z.number().optional().describe("Année (ex: 2025)"),
+      group: groupEnum.optional().describe("Groupe de transaction"),
+      category: categoryEnum.optional().describe("Catégorie"),
+      search: z.string().optional().describe("Rechercher dans la description"),
+      limit: z.number().optional().default(50).describe("Nombre max de résultats"),
     }),
     execute: async ({ month, year, group, category, search, limit }) => {
       const where: Record<string, unknown> = {};
@@ -67,10 +67,10 @@ export const budgetTools = {
   }),
 
   getSummary: tool({
-    description: "Obtener resumen financiero de un mes: totales por grupo, balance, tasa de ahorro",
+    description: "Obtenir le résumé financier d'un mois : totaux par groupe, solde, taux d'épargne",
     inputSchema: z.object({
-      month: z.number().describe("Mes (1-12)"),
-      year: z.number().describe("Año"),
+      month: z.number().describe("Mois (1-12)"),
+      year: z.number().describe("Année"),
     }),
     execute: async ({ month, year }) => {
       const transactions = await prisma.personalTransaction.findMany({
@@ -98,13 +98,13 @@ export const budgetTools = {
   }),
 
   getTrends: tool({
-    description: "Ver tendencias de gastos/ingresos en los últimos N meses",
+    description: "Voir les tendances de dépenses/revenus sur les N derniers mois",
     inputSchema: z.object({
-      months: z.number().default(6).describe("Número de meses hacia atrás"),
+      months: z.number().default(6).describe("Nombre de mois en arrière"),
     }),
     execute: async ({ months }) => {
       const latest = await prisma.personalTransaction.findFirst({ orderBy: { date: "desc" }, select: { date: true } });
-      if (!latest) return { message: "No hay datos" };
+      if (!latest) return { message: "Aucune donnée" };
       const end = new Date(latest.date);
       const startDate = new Date(end.getFullYear(), end.getMonth() - months + 1, 1);
       const transactions = await prisma.personalTransaction.findMany({
@@ -126,16 +126,16 @@ export const budgetTools = {
   }),
 
   reclassify: tool({
-    description: "Cambiar la clasificación (grupo y categoría) de una transacción",
+    description: "Changer la classification (groupe et catégorie) d'une transaction",
     inputSchema: z.object({
-      transactionId: z.string().describe("ID de la transacción"),
-      group: groupEnum.describe("Nuevo grupo"),
-      category: categoryEnum.describe("Nueva categoría"),
+      transactionId: z.string().describe("ID de la transaction"),
+      group: groupEnum.describe("Nouveau groupe"),
+      category: categoryEnum.describe("Nouvelle catégorie"),
     }),
     execute: async ({ transactionId, group, category }) => {
       const validCategories = CATEGORIES_BY_GROUP[group] || [];
       if (!validCategories.includes(category)) {
-        return { error: `${category} no pertenece al grupo ${group}. Válidas: ${validCategories.join(", ")}` };
+        return { error: `${category} n'appartient pas au groupe ${group}. Valides : ${validCategories.join(", ")}` };
       }
       const updated = await prisma.personalTransaction.update({
         where: { id: transactionId },
@@ -147,7 +147,7 @@ export const budgetTools = {
   }),
 
   getSubscriptions: tool({
-    description: "Listar suscripciones y gastos recurrentes fijos",
+    description: "Lister les abonnements et charges récurrentes fixes",
     inputSchema: z.object({}),
     execute: async () => {
       const FIXED_CATS: TransactionCategory[] = [
@@ -172,7 +172,7 @@ export const budgetTools = {
   }),
 
   getNetWorth: tool({
-    description: "Ver el patrimonio neto y su evolución",
+    description: "Voir le patrimoine net et son évolution",
     inputSchema: z.object({}),
     execute: async () => {
       const snapshots = await prisma.netWorthSnapshot.findMany({ orderBy: [{ year: "asc" }, { month: "asc" }] });
@@ -186,14 +186,14 @@ export const budgetTools = {
   }),
 
   deleteTransaction: tool({
-    description: "Eliminar una transacción (ej: transferencia interna que no debería estar)",
+    description: "Supprimer une transaction (ex : virement interne qui ne devrait pas figurer)",
     inputSchema: z.object({
-      transactionId: z.string().describe("ID de la transacción a eliminar"),
-      reason: z.string().describe("Razón de la eliminación"),
+      transactionId: z.string().describe("ID de la transaction à supprimer"),
+      reason: z.string().describe("Raison de la suppression"),
     }),
     execute: async ({ transactionId, reason }) => {
       const t = await prisma.personalTransaction.findUnique({ where: { id: transactionId } });
-      if (!t) return { error: "Transacción no encontrada" };
+      if (!t) return { error: "Transaction non trouvée" };
       await prisma.personalTransaction.delete({ where: { id: transactionId } });
       return { success: true, deleted: { description: t.description, amount: Number(t.amount),
         date: t.date.toISOString().slice(0, 10) }, reason };

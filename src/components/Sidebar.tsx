@@ -15,20 +15,20 @@ import {
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Movimientos", href: "/household", icon: ListPlus },
-  { name: "Calendario", href: "/calendar", icon: CalendarDays },
-  { name: "Suscripciones", href: "/subscriptions", icon: Repeat },
-  { name: "Patrimonio", href: "/net-worth", icon: TrendingUp },
-  { name: "Reglas", href: "/rules", icon: Settings },
+  { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Opérations", href: "/household", icon: ListPlus },
+  { name: "Calendrier", href: "/calendar", icon: CalendarDays },
+  { name: "Abonnements", href: "/subscriptions", icon: Repeat },
+  { name: "Patrimoine", href: "/net-worth", icon: TrendingUp },
+  { name: "Règles", href: "/rules", icon: Settings },
 ];
 
 const mobileNav = [
   { name: "Chat", href: "/", icon: MessageCircle },
-  { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Movi.", href: "/household", icon: ListPlus },
-  { name: "Suscri.", href: "/subscriptions", icon: Repeat },
-  { name: "Patri.", href: "/net-worth", icon: TrendingUp },
+  { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Opér.", href: "/household", icon: ListPlus },
+  { name: "Abonn.", href: "/subscriptions", icon: Repeat },
+  { name: "Patrim.", href: "/net-worth", icon: TrendingUp },
 ];
 
 export default function Sidebar() {
@@ -58,13 +58,13 @@ export default function Sidebar() {
             )}
           >
             <MessageCircle size={18} />
-            Asistente AI
+            Assistant IA
           </Link>
         </div>
 
         <div className="px-3 pt-1">
           <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-            Secciones
+            Sections
           </p>
           <nav className="space-y-0.5">
             {navigation.map((item) => {
@@ -91,7 +91,7 @@ export default function Sidebar() {
         </div>
 
         <div className="mt-auto border-t border-gray-800 p-4 text-[11px] text-gray-600">
-          Finanzas de Adrien Naeem
+          Finances d'Adrien Naeem
         </div>
       </aside>
 

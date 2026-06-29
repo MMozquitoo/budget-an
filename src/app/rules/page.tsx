@@ -24,10 +24,10 @@ interface Rule {
 }
 
 const MATCH_TYPES = [
-  { value: "CONTAINS", label: "Contiene" },
-  { value: "STARTS_WITH", label: "Empieza con" },
-  { value: "ENDS_WITH", label: "Termina con" },
-  { value: "EXACT", label: "Exacto" },
+  { value: "CONTAINS", label: "Contient" },
+  { value: "STARTS_WITH", label: "Commence par" },
+  { value: "ENDS_WITH", label: "Finit par" },
+  { value: "EXACT", label: "Exact" },
   { value: "REGEX", label: "Regex" },
 ];
 
@@ -124,10 +124,10 @@ export default function RulesPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Reglas de clasificación
+            Règles de classification
           </h1>
           <p className="text-sm text-gray-500">
-            Auto-categoriza transacciones al importar
+            Catégorisation automatique à l'import
           </p>
         </div>
         <button
@@ -135,7 +135,7 @@ export default function RulesPage() {
           className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           <Plus className="h-4 w-4" />
-          Nueva regla
+          Nouvelle règle
         </button>
       </div>
 
@@ -143,22 +143,22 @@ export default function RulesPage() {
       {showForm && (
         <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            {editingId ? "Editar regla" : "Nueva regla"}
+            {editingId ? "Modifier la règle" : "Nouvelle règle"}
           </h3>
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Nom</label>
               <input
                 type="text"
                 required
-                placeholder="ej. Monoprix → Comida"
+                placeholder="ex. Monoprix → Courses"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de búsqueda</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Type de recherche</label>
               <select
                 value={form.matchType}
                 onChange={(e) => setForm({ ...form, matchType: e.target.value })}
@@ -170,18 +170,18 @@ export default function RulesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Valor a buscar</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Valeur à chercher</label>
               <input
                 type="text"
                 required
-                placeholder="ej. MONOPRIX"
+                placeholder="ex. MONOPRIX"
                 value={form.matchValue}
                 onChange={(e) => setForm({ ...form, matchValue: e.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Grupo</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Groupe</label>
               <select
                 value={form.group}
                 onChange={(e) => {
@@ -197,7 +197,7 @@ export default function RulesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Categoría</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Catégorie</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -209,7 +209,7 @@ export default function RulesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Prioridad</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Priorité</label>
               <input
                 type="number"
                 value={form.priority}
@@ -222,14 +222,14 @@ export default function RulesPage() {
                 type="submit"
                 className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-700"
               >
-                {editingId ? "Actualizar" : "Crear regla"}
+                {editingId ? "Mettre à jour" : "Créer la règle"}
               </button>
               <button
                 type="button"
                 onClick={cancelEdit}
                 className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Cancelar
+                Annuler
               </button>
             </div>
           </form>
@@ -241,10 +241,10 @@ export default function RulesPage() {
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
           <Settings className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-600">
-            Sin reglas de clasificación
+            Aucune règle de classification
           </h3>
           <p className="mt-2 text-sm text-gray-400">
-            Crea reglas para auto-clasificar tus transacciones al importar desde el banco.
+            Crée des règles pour classifier automatiquement tes transactions lors de l'import bancaire.
           </p>
         </div>
       ) : (
@@ -253,11 +253,11 @@ export default function RulesPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-500">Nombre</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Búsqueda</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Asigna a</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Prioridad</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Estado</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Nom</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Recherche</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Affecté à</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Priorité</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Statut</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -297,7 +297,7 @@ export default function RulesPage() {
                               : "bg-gray-100 text-gray-400"
                           )}
                         >
-                          {rule.active ? "Activa" : "Inactiva"}
+                          {rule.active ? "Active" : "Inactive"}
                         </button>
                       </td>
                       <td className="px-4 py-3 text-right">

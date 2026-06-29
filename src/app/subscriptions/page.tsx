@@ -72,9 +72,9 @@ export default function SubscriptionsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Suscripciones</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Abonnements</h1>
         <p className="text-sm text-gray-500">
-          Tus gastos recurrentes y proyecciones
+          Tes charges récurrentes et projections
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export default function SubscriptionsPage() {
               <Repeat className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Suscripciones activas</p>
+              <p className="text-sm text-gray-500">Abonnements actifs</p>
               <p className="text-2xl font-bold text-gray-900">
                 {subscriptions.length}
               </p>
@@ -99,7 +99,7 @@ export default function SubscriptionsPage() {
               <Calendar className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Costo mensual</p>
+              <p className="text-sm text-gray-500">Coût mensuel</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(monthlyTotal)}
               </p>
@@ -112,7 +112,7 @@ export default function SubscriptionsPage() {
               <TrendingUp className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Proyección anual</p>
+              <p className="text-sm text-gray-500">Projection annuelle</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(yearlyTotal)}
               </p>
@@ -126,11 +126,11 @@ export default function SubscriptionsPage() {
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
           <Repeat className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-600">
-            Sin suscripciones
+            Aucun abonnement
           </h3>
           <p className="mt-2 text-sm text-gray-400">
-            Marca transacciones como recurrentes en Movimientos para verlas
-            aquí.
+            Marque des transactions comme récurrentes dans Opérations pour les voir
+            ici.
           </p>
         </div>
       ) : (
@@ -164,11 +164,11 @@ export default function SubscriptionsPage() {
                         {CATEGORY_LABELS[category] || category}
                       </span>
                       <span className="text-sm text-gray-400">
-                        {txns.length} servicio{txns.length > 1 ? "s" : ""}
+                        {txns.length} service{txns.length > 1 ? "s" : ""}
                       </span>
                     </div>
                     <span className="font-semibold text-gray-900">
-                      {formatCurrency(catTotal)}/mes
+                      {formatCurrency(catTotal)}/mois
                     </span>
                   </div>
                   <div className="divide-y divide-gray-50">
@@ -182,8 +182,8 @@ export default function SubscriptionsPage() {
                             {t.description}
                           </p>
                           <p className="text-xs text-gray-400">
-                            Último cobro:{" "}
-                            {new Date(t.date).toLocaleDateString("es-ES", {
+                            Dernier prélèvement :{" "}
+                            {new Date(t.date).toLocaleDateString("fr-FR", {
                               day: "numeric",
                               month: "short",
                               year: "numeric",

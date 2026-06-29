@@ -121,7 +121,7 @@ export default function Dashboard() {
         setData(summaryData);
         setTrends(trendsData);
       })
-      .catch(() => setError("No se pudo conectar a la base de datos."))
+      .catch(() => setError("Impossible de se connecter à la base de données."))
       .finally(() => setLoading(false));
   }, [month, year]);
 
@@ -137,7 +137,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-20">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center max-w-lg">
-          <h2 className="text-lg font-semibold text-amber-800 mb-2">Sin conexión</h2>
+          <h2 className="text-lg font-semibold text-amber-800 mb-2">Hors connexion</h2>
           <p className="text-sm text-amber-700">{error}</p>
         </div>
       </div>
@@ -154,9 +154,9 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mi Presupuesto</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Mon Budget</h1>
           <p className="text-sm text-gray-500">
-            Resumen financiero personal
+            Résumé financier personnel
           </p>
         </div>
         <div className="flex gap-2">
@@ -192,7 +192,7 @@ export default function Dashboard() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Ingresos</span>
+            <span className="text-sm font-medium text-gray-500">Revenus</span>
             <div className="rounded-lg bg-emerald-50 p-2">
               <DollarSign className="h-5 w-5 text-emerald-600" />
             </div>
@@ -209,7 +209,7 @@ export default function Dashboard() {
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Gastos</span>
+            <span className="text-sm font-medium text-gray-500">Dépenses</span>
             <div className="rounded-lg bg-red-50 p-2">
               <TrendingDown className="h-5 w-5 text-red-600" />
             </div>
@@ -219,14 +219,14 @@ export default function Dashboard() {
               {formatCurrency(data.totalExpenses)}
             </span>
             <p className="mt-1 text-xs text-gray-400">
-              {data.expenseRate.toFixed(0)}% del ingreso
+              {data.expenseRate.toFixed(0)}% des revenus
             </p>
           </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Ahorro</span>
+            <span className="text-sm font-medium text-gray-500">Épargne</span>
             <div className="rounded-lg bg-violet-50 p-2">
               <PiggyBank className="h-5 w-5 text-violet-600" />
             </div>
@@ -236,14 +236,14 @@ export default function Dashboard() {
               {formatCurrency(data.totalSavings)}
             </span>
             <p className="mt-1 text-xs text-gray-400">
-              Tasa: {data.savingsRate.toFixed(0)}%
+              Taux : {data.savingsRate.toFixed(0)}%
             </p>
           </div>
         </div>
 
         <div className={cn("rounded-xl border p-6 shadow-sm", balanceBg, data.balance >= 0 ? "border-emerald-200" : "border-red-200")}>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Balance</span>
+            <span className="text-sm font-medium text-gray-500">Solde</span>
             <div className={cn("rounded-lg p-2", balanceBg)}>
               <Wallet className={cn("h-5 w-5", balanceColor)} />
             </div>
@@ -253,7 +253,7 @@ export default function Dashboard() {
               {formatCurrency(data.balance)}
             </span>
             <p className="mt-1 text-xs text-gray-400">
-              Ingreso - Todo lo que sale
+              Revenus - Total des sorties
             </p>
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function Dashboard() {
               {group !== "INCOME" && data.totalIncome > 0 && (
                 <div className="mb-4">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>{pct.toFixed(0)}% del ingreso</span>
+                    <span>{pct.toFixed(0)}% des revenus</span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-gray-100">
                     <div
@@ -335,7 +335,7 @@ export default function Dashboard() {
                   );
                 })}
                 {categories.every((cat) => !(data.byCategory[cat])) && (
-                  <p className="text-xs text-gray-300 italic px-2">Sin movimientos</p>
+                  <p className="text-xs text-gray-300 italic px-2">Aucune opération</p>
                 )}
               </div>
             </div>
@@ -348,13 +348,13 @@ export default function Dashboard() {
         <div className="mb-6 grid gap-6 lg:grid-cols-2">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Ingresos vs Gastos
+              Revenus vs Dépenses
             </h2>
             <IncomeVsExpensesChart data={trends} />
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Evolución por grupo
+              Évolution par groupe
             </h2>
             <GroupTrendChart data={trends} />
           </div>
@@ -365,10 +365,10 @@ export default function Dashboard() {
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
           <Wallet className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-600">
-            No hay movimientos este mes
+            Aucune opération ce mois
           </h3>
           <p className="mt-2 text-sm text-gray-400">
-            Ve a <a href="/household" className="text-indigo-600 underline">Movimientos</a> para agregar tus ingresos y gastos.
+            Va sur <a href="/household" className="text-indigo-600 underline">Opérations</a> pour ajouter tes revenus et dépenses.
           </p>
         </div>
       )}

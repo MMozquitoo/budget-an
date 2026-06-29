@@ -21,7 +21,7 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
 }
 
 export function getMonthName(month: number): string {
-  return new Date(2024, month - 1).toLocaleString("en", { month: "long" });
+  return new Date(2024, month - 1).toLocaleString("fr-FR", { month: "long" });
 }
 
 export function getCurrentMonth(): number {
@@ -50,12 +50,12 @@ export const HOUSEHOLD_LABELS: Record<string, string> = {
 // ── Personal Transaction System ──
 
 export const GROUP_LABELS: Record<string, string> = {
-  INCOME: "Ingresos",
-  FIXED_EXPENSE: "Gastos Fijos",
-  VARIABLE_EXPENSE: "Gastos Variables",
-  SAVINGS: "Ahorro",
-  DEBT: "Deudas",
-  UNEXPECTED: "Imprevistos",
+  INCOME: "Revenus",
+  FIXED_EXPENSE: "Charges fixes",
+  VARIABLE_EXPENSE: "Dépenses variables",
+  SAVINGS: "Épargne",
+  DEBT: "Dettes",
+  UNEXPECTED: "Imprévus",
 };
 
 export const GROUP_COLORS: Record<string, { bg: string; text: string; dot: string; border: string }> = {
@@ -68,52 +68,52 @@ export const GROUP_COLORS: Record<string, { bg: string; text: string; dot: strin
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {
-  // Ingresos
-  SALARY: "Salario",
+  // Revenus
+  SALARY: "Salaire",
   FREELANCE: "Freelance",
-  SALES: "Ventas",
-  BONUS: "Bonos / Comisiones",
-  AID: "Ayudas / Préstamos",
-  OTHER_INCOME: "Otros ingresos",
-  // Gastos fijos
-  RENT: "Arriendo / Hipoteca",
-  UTILITIES: "Servicios (agua, luz, gas)",
-  INTERNET_PHONE: "Internet / Celular",
-  TRANSPORT_FIXED: "Transporte fijo",
-  SUBSCRIPTIONS: "Suscripciones",
-  INSURANCE: "Seguros",
-  CREDIT_PAYMENT: "Créditos / Cuotas fijas",
-  EDUCATION_FIXED: "Matrícula / Estudios",
-  // Gastos variables
-  GROCERIES: "Mercado / Comida",
-  RESTAURANTS: "Restaurantes / Domicilios",
-  TRANSPORT_VARIABLE: "Transporte ocasional",
-  CLOTHING: "Ropa",
-  PHARMACY: "Farmacia",
-  PETS: "Mascotas",
-  PERSONAL_CARE: "Belleza / Cuidado personal",
-  ENTERTAINMENT: "Salidas / Ocio",
-  GIFTS: "Regalos",
-  REPAIRS: "Reparaciones",
-  // Ahorro
-  GENERAL_SAVINGS: "Ahorro general",
-  EMERGENCY_FUND: "Fondo de emergencia",
-  TRAVEL_FUND: "Viajes",
-  EDUCATION_FUND: "Estudios",
-  BIG_PURCHASE: "Compra grande",
-  INVESTMENT: "Inversión",
-  // Deudas
-  CREDIT_CARD: "Tarjeta de crédito",
-  PERSONAL_LOAN: "Préstamos personales",
-  INSTALLMENT: "Cuotas",
-  INTEREST: "Intereses",
-  PENDING_PAYMENT: "Pagos pendientes",
-  // Imprevistos
-  EMERGENCY: "Emergencias",
-  HEALTH: "Salud",
-  UNEXPECTED_REPAIR: "Reparaciones urgentes",
-  FINE: "Multas",
-  UNPLANNED: "Gastos no planeados",
+  SALES: "Ventes",
+  BONUS: "Primes / Commissions",
+  AID: "Aides / Prêts",
+  OTHER_INCOME: "Autres revenus",
+  // Charges fixes
+  RENT: "Loyer / Crédit immo",
+  UTILITIES: "Services (eau, élec, gaz)",
+  INTERNET_PHONE: "Internet / Téléphone",
+  TRANSPORT_FIXED: "Transport fixe",
+  SUBSCRIPTIONS: "Abonnements",
+  INSURANCE: "Assurances",
+  CREDIT_PAYMENT: "Crédits / Mensualités",
+  EDUCATION_FIXED: "Scolarité / Formation",
+  // Dépenses variables
+  GROCERIES: "Courses / Alimentation",
+  RESTAURANTS: "Restaurants / Livraison",
+  TRANSPORT_VARIABLE: "Transport occasionnel",
+  CLOTHING: "Vêtements",
+  PHARMACY: "Pharmacie",
+  PETS: "Animaux",
+  PERSONAL_CARE: "Soins / Beauté",
+  ENTERTAINMENT: "Sorties / Loisirs",
+  GIFTS: "Cadeaux",
+  REPAIRS: "Réparations",
+  // Épargne
+  GENERAL_SAVINGS: "Épargne générale",
+  EMERGENCY_FUND: "Fonds d'urgence",
+  TRAVEL_FUND: "Voyages",
+  EDUCATION_FUND: "Études",
+  BIG_PURCHASE: "Achat important",
+  INVESTMENT: "Investissement",
+  // Dettes
+  CREDIT_CARD: "Carte de crédit",
+  PERSONAL_LOAN: "Prêts personnels",
+  INSTALLMENT: "Mensualités",
+  INTEREST: "Intérêts",
+  PENDING_PAYMENT: "Paiements en attente",
+  // Imprévus
+  EMERGENCY: "Urgences",
+  HEALTH: "Santé",
+  UNEXPECTED_REPAIR: "Réparations urgentes",
+  FINE: "Amendes",
+  UNPLANNED: "Dépenses imprévues",
 };
 
 export const CATEGORIES_BY_GROUP: Record<string, string[]> = {

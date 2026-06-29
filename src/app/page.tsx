@@ -16,10 +16,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const SUGGESTIONS = [
-  { icon: Receipt, text: "Resumen de este mes", color: "text-blue-600 bg-blue-50" },
-  { icon: TrendingUp, text: "Tendencia de gastos", color: "text-emerald-600 bg-emerald-50" },
-  { icon: PiggyBank, text: "Mis suscripciones", color: "text-violet-600 bg-violet-50" },
-  { icon: CalendarDays, text: "Patrimonio neto", color: "text-amber-600 bg-amber-50" },
+  { icon: Receipt, text: "Résumé du mois", color: "text-blue-600 bg-blue-50" },
+  { icon: TrendingUp, text: "Tendance des dépenses", color: "text-emerald-600 bg-emerald-50" },
+  { icon: PiggyBank, text: "Mes abonnements", color: "text-violet-600 bg-violet-50" },
+  { icon: CalendarDays, text: "Patrimoine net", color: "text-amber-600 bg-amber-50" },
 ];
 
 export default function ChatPage() {
@@ -68,7 +68,7 @@ export default function ChatPage() {
               Budget AN
             </h1>
             <p className="mt-1 text-center text-sm text-gray-400 max-w-xs">
-              Tu asistente financiero. Pregunta lo que necesites.
+              Ton assistant financier. Demande ce dont tu as besoin.
             </p>
 
             <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-3">
@@ -142,7 +142,7 @@ export default function ChatPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Pensando...
+                  Réflexion...
                 </div>
               </div>
             )}
@@ -159,7 +159,7 @@ export default function ChatPage() {
               className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
               <RotateCcw className="h-3 w-3" />
-              Nueva conversación
+              Nouvelle conversation
             </button>
           </div>
         )}
@@ -171,7 +171,7 @@ export default function ChatPage() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Pregunta sobre tus finanzas..."
+            placeholder="Pose une question sur tes finances..."
             disabled={isStreaming}
             className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 transition-all"
           />
@@ -190,15 +190,15 @@ export default function ChatPage() {
 
 function toolLabel(name: string): string {
   const labels: Record<string, string> = {
-    queryTransactions: "Buscando transacciones...",
-    getSummary: "Calculando resumen...",
-    getTrends: "Analizando tendencias...",
-    reclassify: "Reclasificando...",
-    getSubscriptions: "Consultando suscripciones...",
-    getNetWorth: "Consultando patrimonio...",
-    deleteTransaction: "Eliminando transacción...",
+    queryTransactions: "Recherche de transactions...",
+    getSummary: "Calcul du résumé...",
+    getTrends: "Analyse des tendances...",
+    reclassify: "Reclassification...",
+    getSubscriptions: "Consultation des abonnements...",
+    getNetWorth: "Consultation du patrimoine...",
+    deleteTransaction: "Suppression de la transaction...",
   };
-  return labels[name] || "Procesando...";
+  return labels[name] || "Traitement...";
 }
 
 function formatMarkdown(text: string): string {

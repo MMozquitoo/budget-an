@@ -20,7 +20,7 @@ interface MonthData {
   byCategory: Record<string, number>;
 }
 
-const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const MONTH_NAMES = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
 const GROUP_CHART_COLORS: Record<string, string> = {
   INCOME: "#10b981",
@@ -50,9 +50,9 @@ function CustomTooltip({ active, payload, label }: any) {
 export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
   const chartData = data.map((d) => ({
     name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
-    Ingresos: d.byGroup["INCOME"] || 0,
-    Gastos: (d.byGroup["FIXED_EXPENSE"] || 0) + (d.byGroup["VARIABLE_EXPENSE"] || 0) + (d.byGroup["UNEXPECTED"] || 0),
-    Ahorro: d.byGroup["SAVINGS"] || 0,
+    Revenus: d.byGroup["INCOME"] || 0,
+    Dépenses: (d.byGroup["FIXED_EXPENSE"] || 0) + (d.byGroup["VARIABLE_EXPENSE"] || 0) + (d.byGroup["UNEXPECTED"] || 0),
+    Épargne: d.byGroup["SAVINGS"] || 0,
   }));
 
   return (
@@ -62,9 +62,9 @@ export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
         <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Ahorro" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Revenus" fill="#10b981" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Dépenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Épargne" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

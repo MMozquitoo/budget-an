@@ -63,13 +63,13 @@ export default function CalendarPage() {
     else setMonth(month + 1);
   };
 
-  const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  const WEEKDAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Calendario</h1>
-        <p className="text-sm text-gray-500">Vista diaria de tus movimientos</p>
+        <h1 className="text-2xl font-bold text-gray-900">Calendrier</h1>
+        <p className="text-sm text-gray-500">Vue journalière de tes opérations</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -153,15 +153,15 @@ export default function CalendarPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {selectedDay
               ? `${selectedDay} ${getMonthName(month)}`
-              : "Selecciona un día"}
+              : "Sélectionne un jour"}
           </h3>
 
           {!selectedDay ? (
             <p className="text-sm text-gray-400">
-              Clickea en un día del calendario para ver sus movimientos
+              Clique sur un jour du calendrier pour voir ses opérations
             </p>
           ) : selectedTransactions.length === 0 ? (
-            <p className="text-sm text-gray-400">Sin movimientos este día</p>
+            <p className="text-sm text-gray-400">Aucune opération ce jour</p>
           ) : (
             <div className="space-y-3">
               {selectedTransactions.map((t) => {
@@ -189,7 +189,7 @@ export default function CalendarPage() {
               })}
               <div className="border-t border-gray-100 pt-3">
                 <div className="flex justify-between text-sm font-medium">
-                  <span className="text-gray-500">Total del día</span>
+                  <span className="text-gray-500">Total du jour</span>
                   <span className={cn(
                     dayTotal(selectedDay) >= 0 ? "text-emerald-600" : "text-red-600"
                   )}>
