@@ -47,6 +47,86 @@ export const HOUSEHOLD_LABELS: Record<string, string> = {
   NICOLAS: "Nicolas",
 };
 
+// ── Personal Transaction System ──
+
+export const GROUP_LABELS: Record<string, string> = {
+  INCOME: "Ingresos",
+  FIXED_EXPENSE: "Gastos Fijos",
+  VARIABLE_EXPENSE: "Gastos Variables",
+  SAVINGS: "Ahorro",
+  DEBT: "Deudas",
+  UNEXPECTED: "Imprevistos",
+};
+
+export const GROUP_COLORS: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+  INCOME:           { bg: "bg-emerald-50",  text: "text-emerald-700",  dot: "bg-emerald-500",  border: "border-emerald-200" },
+  FIXED_EXPENSE:    { bg: "bg-blue-50",     text: "text-blue-700",     dot: "bg-blue-500",     border: "border-blue-200" },
+  VARIABLE_EXPENSE: { bg: "bg-amber-50",    text: "text-amber-700",    dot: "bg-amber-500",    border: "border-amber-200" },
+  SAVINGS:          { bg: "bg-violet-50",   text: "text-violet-700",   dot: "bg-violet-500",   border: "border-violet-200" },
+  DEBT:             { bg: "bg-red-50",      text: "text-red-700",      dot: "bg-red-500",      border: "border-red-200" },
+  UNEXPECTED:       { bg: "bg-orange-50",   text: "text-orange-700",   dot: "bg-orange-500",   border: "border-orange-200" },
+};
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  // Ingresos
+  SALARY: "Salario",
+  FREELANCE: "Freelance",
+  SALES: "Ventas",
+  BONUS: "Bonos / Comisiones",
+  AID: "Ayudas / Préstamos",
+  OTHER_INCOME: "Otros ingresos",
+  // Gastos fijos
+  RENT: "Arriendo / Hipoteca",
+  UTILITIES: "Servicios (agua, luz, gas)",
+  INTERNET_PHONE: "Internet / Celular",
+  TRANSPORT_FIXED: "Transporte fijo",
+  SUBSCRIPTIONS: "Suscripciones",
+  INSURANCE: "Seguros",
+  CREDIT_PAYMENT: "Créditos / Cuotas fijas",
+  EDUCATION_FIXED: "Matrícula / Estudios",
+  // Gastos variables
+  GROCERIES: "Mercado / Comida",
+  RESTAURANTS: "Restaurantes / Domicilios",
+  TRANSPORT_VARIABLE: "Transporte ocasional",
+  CLOTHING: "Ropa",
+  PHARMACY: "Farmacia",
+  PETS: "Mascotas",
+  PERSONAL_CARE: "Belleza / Cuidado personal",
+  ENTERTAINMENT: "Salidas / Ocio",
+  GIFTS: "Regalos",
+  REPAIRS: "Reparaciones",
+  // Ahorro
+  GENERAL_SAVINGS: "Ahorro general",
+  EMERGENCY_FUND: "Fondo de emergencia",
+  TRAVEL_FUND: "Viajes",
+  EDUCATION_FUND: "Estudios",
+  BIG_PURCHASE: "Compra grande",
+  INVESTMENT: "Inversión",
+  // Deudas
+  CREDIT_CARD: "Tarjeta de crédito",
+  PERSONAL_LOAN: "Préstamos personales",
+  INSTALLMENT: "Cuotas",
+  INTEREST: "Intereses",
+  PENDING_PAYMENT: "Pagos pendientes",
+  // Imprevistos
+  EMERGENCY: "Emergencias",
+  HEALTH: "Salud",
+  UNEXPECTED_REPAIR: "Reparaciones urgentes",
+  FINE: "Multas",
+  UNPLANNED: "Gastos no planeados",
+};
+
+export const CATEGORIES_BY_GROUP: Record<string, string[]> = {
+  INCOME: ["SALARY", "FREELANCE", "SALES", "BONUS", "AID", "OTHER_INCOME"],
+  FIXED_EXPENSE: ["RENT", "UTILITIES", "INTERNET_PHONE", "TRANSPORT_FIXED", "SUBSCRIPTIONS", "INSURANCE", "CREDIT_PAYMENT", "EDUCATION_FIXED"],
+  VARIABLE_EXPENSE: ["GROCERIES", "RESTAURANTS", "TRANSPORT_VARIABLE", "CLOTHING", "PHARMACY", "PETS", "PERSONAL_CARE", "ENTERTAINMENT", "GIFTS", "REPAIRS"],
+  SAVINGS: ["GENERAL_SAVINGS", "EMERGENCY_FUND", "TRAVEL_FUND", "EDUCATION_FUND", "BIG_PURCHASE", "INVESTMENT"],
+  DEBT: ["CREDIT_CARD", "PERSONAL_LOAN", "INSTALLMENT", "INTEREST", "PENDING_PAYMENT"],
+  UNEXPECTED: ["EMERGENCY", "HEALTH", "UNEXPECTED_REPAIR", "FINE", "UNPLANNED"],
+};
+
+export const GROUP_ORDER = ["INCOME", "FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED"] as const;
+
 export const DECISION_CATEGORY_LABELS: Record<string, string> = {
   HIRE: "Hire",
   EVENT: "Event",

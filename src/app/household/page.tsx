@@ -1,86 +1,114 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Filter } from "lucide-react";
 import {
   formatCurrency,
   getCurrentMonth,
   getCurrentYear,
   getMonthName,
   cn,
-  HOUSEHOLD_LABELS,
+  GROUP_LABELS,
+  GROUP_COLORS,
+  CATEGORY_LABELS,
+  CATEGORIES_BY_GROUP,
+  GROUP_ORDER,
 } from "@/lib/utils";
 
-interface HouseholdExpense {
+interface Transaction {
   id: string;
   date: string;
   amount: number;
+  group: string;
   category: string;
   description: string;
+  notes: string | null;
+  recurring: boolean;
 }
 
-const CATEGORIES = Object.keys(HOUSEHOLD_LABELS) as string[];
-
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  FIXED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  VARIABLE: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  FAMILY_TRAVEL: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },
-  NICOLAS: { bg: "bg-teal-50", text: "text-teal-700", dot: "bg-teal-500" },
-};
-
-function burnColor(total: number): string {
-  if (total < 4000) return "text-green-600";
-  if (total <= 5000) return "text-yellow-600";
-  return "text-red-600";
-}
-
-export default function HouseholdPage() {
-  const [expenses, setExpenses] = useState<HouseholdExpense[]>([]);
-  const [month, setMonth] = useState(10);
-  const [year, setYear] = useState(2025);
+export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [month, setMonth] = useState<number | null>(null);
+  const [year, setYear] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [filterGroup, setFilterGroup] = useState<string>("ALL");
 
   // Form state
   const [formDate, setFormDate] = useState("");
   const [formAmount, setFormAmount] = useState("");
-  const [formCategory, setFormCategory] = useState(CATEGORIES[0]);
+  const [formGroup, setFormGroup] = useState<string>("VARIABLE_EXPENSE");
+  const [formCategory, setFormCategory] = useState<string>("GROCERIES");
   const [formDescription, setFormDescription] = useState("");
+  const [formNotes, setFormNotes] = useState("");
+  const [formRecurring, setFormRecurring] = useState(false);
 
-  const fetchExpenses = () => {
+  const fetchTransactions = () => {
+    if (month === null || year === null) return;
     setLoading(true);
-    fetch(`/api/household-expenses?month=${month}&year=${year}`)
-      .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
-      .then(setExpenses)
+    const groupParam = filterGroup !== "ALL" ? `&group=${filterGroup}` : "";
+    fetch(`/api/transactions?month=${month}&year=${year}${groupParam}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("API error");
+        return r.json();
+      })
+      .then(setTransactions)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchExpenses();
-  }, [month, year]);
+    if (!initialized) {
+      fetch("/api/transactions/latest")
+        .then((r) => r.json())
+        .then((d) => {
+          setMonth(d.month);
+          setYear(d.year);
+          setInitialized(true);
+        })
+        .catch(() => {
+          setMonth(getCurrentMonth());
+          setYear(getCurrentYear());
+          setInitialized(true);
+        });
+      return;
+    }
+    fetchTransactions();
+  }, [month, year, filterGroup, initialized]);
+
+  useEffect(() => {
+    const cats = CATEGORIES_BY_GROUP[formGroup];
+    if (cats && cats.length > 0) {
+      setFormCategory(cats[0]);
+    }
+  }, [formGroup]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch("/api/household-expenses", {
+      const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: formDate,
           amount: Number(formAmount),
+          group: formGroup,
           category: formCategory,
           description: formDescription,
+          notes: formNotes || null,
+          recurring: formRecurring,
         }),
       });
       if (res.ok) {
         setFormDate("");
         setFormAmount("");
-        setFormCategory(CATEGORIES[0]);
         setFormDescription("");
+        setFormNotes("");
+        setFormRecurring(false);
         setShowForm(false);
-        fetchExpenses();
+        fetchTransactions();
       }
     } finally {
       setSubmitting(false);
@@ -88,45 +116,32 @@ export default function HouseholdPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/household-expenses?id=${id}`, { method: "DELETE" });
-    fetchExpenses();
+    await fetch(`/api/transactions?id=${id}`, { method: "DELETE" });
+    fetchTransactions();
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
+  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-  const byCategory = CATEGORIES.map((cat) => {
-    const catTotal = expenses
-      .filter((e) => e.category === cat)
-      .reduce((sum, e) => sum + e.amount, 0);
-    return {
-      category: cat,
-      label: HOUSEHOLD_LABELS[cat] || cat,
-      total: catTotal,
-      percent: total > 0 ? (catTotal / total) * 100 : 0,
-    };
-  });
+  const groupTotals = GROUP_ORDER.reduce((acc, g) => {
+    acc[g] = transactions
+      .filter((t) => t.group === g)
+      .reduce((sum, t) => sum + t.amount, 0);
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <div>
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Household</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Movimientos</h1>
           <p className="text-sm text-gray-500">
-            Is our cost of life compatible with the freedom we want?
+            Registra y clasifica tus ingresos, gastos y ahorro
           </p>
         </div>
         <div className="flex gap-2">
           <select
-            value={month}
+            value={month ?? getCurrentMonth()}
             onChange={(e) => setMonth(Number(e.target.value))}
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
           >
@@ -137,7 +152,7 @@ export default function HouseholdPage() {
             ))}
           </select>
           <select
-            value={year}
+            value={year ?? getCurrentYear()}
             onChange={(e) => setYear(Number(e.target.value))}
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
           >
@@ -153,47 +168,58 @@ export default function HouseholdPage() {
         </div>
       </div>
 
-      {/* Top KPI: Monthly Burn Rate */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-        <p className="text-sm font-medium text-gray-500">Monthly Burn Rate</p>
-        <p className={cn("mt-2 text-4xl font-bold", burnColor(total))}>
-          {formatCurrency(total)}
-        </p>
-        <p className="mt-1 text-sm text-gray-400">
-          {getMonthName(month)} {year}
-        </p>
-      </div>
-
-      {/* Category Cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {byCategory.map((cat) => {
-          const colors = CATEGORY_COLORS[cat.category] || CATEGORY_COLORS.FIXED;
+      {/* Quick totals */}
+      <div className="mb-6 grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+        {GROUP_ORDER.map((g) => {
+          const colors = GROUP_COLORS[g];
+          const amt = groupTotals[g] || 0;
           return (
-            <div
-              key={cat.category}
-              className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+            <button
+              key={g}
+              onClick={() => setFilterGroup(filterGroup === g ? "ALL" : g)}
+              className={cn(
+                "rounded-xl border p-4 text-left transition-all",
+                filterGroup === g
+                  ? cn(colors.bg, colors.border, "ring-2 ring-offset-1", `ring-current ${colors.text}`)
+                  : "border-gray-200 bg-white hover:bg-gray-50"
+              )}
             >
-              <div className="flex items-center gap-2">
-                <span className={cn("h-3 w-3 rounded-full", colors.dot)} />
-                <span className="text-sm font-medium text-gray-500">
-                  {cat.label}
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-bold text-gray-900">
-                {formatCurrency(cat.total)}
+              <p className="text-xs font-medium text-gray-500 truncate">
+                {GROUP_LABELS[g]}
               </p>
-              <p className="mt-1 text-sm text-gray-400">
-                {cat.percent.toFixed(1)}% of total
+              <p className={cn("mt-1 text-lg font-bold", amt > 0 ? colors.text : "text-gray-300")}>
+                {formatCurrency(amt)}
               </p>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Expense List + Add Form */}
+      {/* Filter indicator */}
+      {filterGroup !== "ALL" && (
+        <div className="mb-4 flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-400" />
+          <span className="text-sm text-gray-500">
+            Filtrando por: <strong>{GROUP_LABELS[filterGroup]}</strong>
+          </span>
+          <button
+            onClick={() => setFilterGroup("ALL")}
+            className="text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            Quitar filtro
+          </button>
+        </div>
+      )}
+
+      {/* Add + List */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Expenses</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {filterGroup === "ALL" ? "Todos los movimientos" : GROUP_LABELS[filterGroup]}
+            <span className="ml-2 text-sm font-normal text-gray-400">
+              ({transactions.length}) &middot; Total: {formatCurrency(total)}
+            </span>
+          </h2>
           <button
             onClick={() => setShowForm(!showForm)}
             className={cn(
@@ -205,26 +231,26 @@ export default function HouseholdPage() {
           >
             {showForm ? (
               <>
-                <X className="h-4 w-4" /> Cancel
+                <X className="h-4 w-4" /> Cancelar
               </>
             ) : (
               <>
-                <Plus className="h-4 w-4" /> Add Expense
+                <Plus className="h-4 w-4" /> Agregar
               </>
             )}
           </button>
         </div>
 
-        {/* Add Form */}
+        {/* Form */}
         {showForm && (
           <form
             onSubmit={handleAdd}
             className="mb-6 rounded-lg border border-gray-100 bg-gray-50 p-4"
           >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Date
+                  Fecha
                 </label>
                 <input
                   type="date"
@@ -236,7 +262,7 @@ export default function HouseholdPage() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Amount
+                  Monto
                 </label>
                 <input
                   type="number"
@@ -251,76 +277,126 @@ export default function HouseholdPage() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Category
+                  Grupo
                 </label>
                 <select
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
+                  value={formGroup}
+                  onChange={(e) => setFormGroup(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                 >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {HOUSEHOLD_LABELS[cat]}
+                  {GROUP_ORDER.map((g) => (
+                    <option key={g} value={g}>
+                      {GROUP_LABELS[g]}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Description
+                  Categoría
+                </label>
+                <select
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                >
+                  {(CATEGORIES_BY_GROUP[formGroup] || []).map((cat) => (
+                    <option key={cat} value={cat}>
+                      {CATEGORY_LABELS[cat]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Descripción
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Rent"
+                  placeholder="Ej: Arriendo junio"
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Notas (opcional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Detalle adicional..."
+                  value={formNotes}
+                  onChange={(e) => setFormNotes(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                />
+              </div>
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={formRecurring}
+                  onChange={(e) => setFormRecurring(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                Recurrente
+              </label>
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                {submitting ? "Adding..." : "Add Expense"}
+                {submitting ? "Guardando..." : "Guardar"}
               </button>
             </div>
           </form>
         )}
 
-        {/* Expense Table */}
-        {expenses.length === 0 ? (
-          <p className="text-sm text-gray-400">No expenses this month</p>
+        {/* Table */}
+        {loading ? (
+          <div className="flex h-32 items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+          </div>
+        ) : transactions.length === 0 ? (
+          <p className="py-8 text-center text-sm text-gray-400">
+            No hay movimientos este mes
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left text-gray-500">
-                  <th className="pb-3 font-medium">Date</th>
-                  <th className="pb-3 font-medium">Description</th>
-                  <th className="pb-3 font-medium">Category</th>
-                  <th className="pb-3 text-right font-medium">Amount</th>
+                  <th className="pb-3 font-medium">Fecha</th>
+                  <th className="pb-3 font-medium">Descripción</th>
+                  <th className="pb-3 font-medium">Grupo</th>
+                  <th className="pb-3 font-medium">Categoría</th>
+                  <th className="pb-3 text-right font-medium">Monto</th>
                   <th className="pb-3 text-right font-medium">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Acciones</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {expenses.map((exp) => {
-                  const colors =
-                    CATEGORY_COLORS[exp.category] || CATEGORY_COLORS.FIXED;
+                {transactions.map((t) => {
+                  const colors = GROUP_COLORS[t.group] || GROUP_COLORS.VARIABLE_EXPENSE;
                   return (
-                    <tr key={exp.id}>
-                      <td className="py-3 text-gray-500">
-                        {new Date(exp.date).toLocaleDateString("en", {
+                    <tr key={t.id}>
+                      <td className="py-3 text-gray-500 whitespace-nowrap">
+                        {new Date(t.date).toLocaleDateString("es", {
                           day: "numeric",
                           month: "short",
                         })}
                       </td>
-                      <td className="py-3 text-gray-900">{exp.description}</td>
+                      <td className="py-3 text-gray-900">
+                        {t.description}
+                        {t.recurring && (
+                          <span className="ml-1.5 text-xs text-gray-400">
+                            (recurrente)
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3">
                         <span
                           className={cn(
@@ -329,15 +405,21 @@ export default function HouseholdPage() {
                             colors.text
                           )}
                         >
-                          {HOUSEHOLD_LABELS[exp.category] || exp.category}
+                          {GROUP_LABELS[t.group]}
                         </span>
                       </td>
-                      <td className="py-3 text-right font-medium text-gray-900">
-                        {formatCurrency(exp.amount)}
+                      <td className="py-3 text-gray-600">
+                        {CATEGORY_LABELS[t.category] || t.category}
+                      </td>
+                      <td className={cn(
+                        "py-3 text-right font-medium",
+                        t.group === "INCOME" ? "text-emerald-600" : "text-gray-900"
+                      )}>
+                        {t.group === "INCOME" ? "+" : "-"}{formatCurrency(t.amount)}
                       </td>
                       <td className="py-3 text-right">
                         <button
-                          onClick={() => handleDelete(exp.id)}
+                          onClick={() => handleDelete(t.id)}
                           className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />

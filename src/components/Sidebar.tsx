@@ -4,12 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Compass,
-  Sparkles,
-  Home,
-  Briefcase,
-  GitBranch,
-  TrendingUp,
-  Scale,
+  LayoutDashboard,
+  ListPlus,
   Menu,
   X,
 } from "lucide-react";
@@ -17,12 +13,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Freedom", href: "/", icon: Sparkles },
-  { name: "Household", href: "/household", icon: Home },
-  { name: "Butterfly", href: "/butterfly", icon: Briefcase },
-  { name: "Pipeline", href: "/pipeline", icon: GitBranch },
-  { name: "Wealth", href: "/wealth", icon: TrendingUp },
-  { name: "Decisions", href: "/decisions", icon: Scale },
+  { name: "Resumen", href: "/", icon: LayoutDashboard },
+  { name: "Movimientos", href: "/household", icon: ListPlus },
 ];
 
 export default function Sidebar() {
@@ -81,7 +73,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="border-t border-gray-800 p-4 text-xs text-gray-500">
-          Capital Allocation OS
+          Mi Presupuesto Personal
         </div>
       </aside>
     </>
