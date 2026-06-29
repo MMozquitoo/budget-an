@@ -1,384 +1,260 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useChat } from "@ai-sdk/react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  ArrowUpRight,
-  ArrowDownRight,
-  Wallet,
-  TrendingDown,
+  Send,
+  Bot,
+  Loader2,
+  Sparkles,
+  Receipt,
+  TrendingUp,
   PiggyBank,
-  AlertTriangle,
-  CreditCard,
-  DollarSign,
-  ChevronRight,
+  CalendarDays,
+  RotateCcw,
 } from "lucide-react";
-import {
-  formatCurrency,
-  getCurrentMonth,
-  getCurrentYear,
-  getMonthName,
-  cn,
-  GROUP_LABELS,
-  GROUP_COLORS,
-  CATEGORY_LABELS,
-  CATEGORIES_BY_GROUP,
-  GROUP_ORDER,
-} from "@/lib/utils";
-import { IncomeVsExpensesChart, GroupTrendChart } from "@/components/TrendChart";
+import { cn } from "@/lib/utils";
 
-interface SummaryData {
-  month: number;
-  year: number;
-  totalIncome: number;
-  totalFixedExpense: number;
-  totalVariableExpense: number;
-  totalSavings: number;
-  totalDebt: number;
-  totalUnexpected: number;
-  totalExpenses: number;
-  totalOutflow: number;
-  balance: number;
-  savingsRate: number;
-  expenseRate: number;
-  prevIncome: number;
-  prevExpenses: number;
-  byGroup: Record<string, number>;
-  byCategory: Record<string, number>;
-  transactionCount: number;
-}
+const SUGGESTIONS = [
+  { icon: Receipt, text: "Resumen de este mes", color: "text-blue-600 bg-blue-50" },
+  { icon: TrendingUp, text: "Tendencia de gastos", color: "text-emerald-600 bg-emerald-50" },
+  { icon: PiggyBank, text: "Mis suscripciones", color: "text-violet-600 bg-violet-50" },
+  { icon: CalendarDays, text: "Patrimonio neto", color: "text-amber-600 bg-amber-50" },
+];
 
-const GROUP_ICONS: Record<string, typeof Wallet> = {
-  INCOME: DollarSign,
-  FIXED_EXPENSE: Wallet,
-  VARIABLE_EXPENSE: TrendingDown,
-  SAVINGS: PiggyBank,
-  DEBT: CreditCard,
-  UNEXPECTED: AlertTriangle,
-};
+export default function ChatPage() {
+  const { messages, status, sendMessage, setMessages } = useChat();
+  const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-function deltaIcon(current: number, previous: number) {
-  if (previous === 0) return null;
-  const delta = current - previous;
-  if (delta >= 0) {
-    return (
-      <span className="flex items-center text-xs font-medium text-emerald-600">
-        <ArrowUpRight className="h-3 w-3" />
-        {formatCurrency(Math.abs(delta))}
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center text-xs font-medium text-red-600">
-      <ArrowDownRight className="h-3 w-3" />
-      {formatCurrency(Math.abs(delta))}
-    </span>
-  );
-}
-
-export default function Dashboard() {
-  const router = useRouter();
-  const [data, setData] = useState<SummaryData | null>(null);
-  const [trends, setTrends] = useState<any[] | null>(null);
-  const [month, setMonth] = useState<number | null>(null);
-  const [year, setYear] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const goToMovimientos = (group?: string, category?: string) => {
-    const params = new URLSearchParams();
-    if (month) params.set("month", String(month));
-    if (year) params.set("year", String(year));
-    if (group) params.set("group", group);
-    if (category) params.set("category", category);
-    router.push(`/household?${params.toString()}`);
-  };
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, []);
 
   useEffect(() => {
-    if (month === null || year === null) {
-      fetch("/api/transactions/latest")
-        .then((r) => r.json())
-        .then((d) => {
-          setMonth(d.month);
-          setYear(d.year);
-        })
-        .catch(() => {
-          setMonth(getCurrentMonth());
-          setYear(getCurrentYear());
-        });
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      fetch(`/api/transactions/summary?month=${month}&year=${year}`).then((r) => {
-        if (!r.ok) throw new Error("API error");
-        return r.json();
-      }),
-      fetch(`/api/transactions/trends?months=8`).then((r) => r.ok ? r.json() : []),
-    ])
-      .then(([summaryData, trendsData]) => {
-        setData(summaryData);
-        setTrends(trendsData);
-      })
-      .catch(() => setError("No se pudo conectar a la base de datos."))
-      .finally(() => setLoading(false));
-  }, [month, year]);
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || status !== "ready") return;
+    sendMessage({ text: input });
+    setInput("");
+  };
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-6 py-20">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center max-w-lg">
-          <h2 className="text-lg font-semibold text-amber-800 mb-2">Sin conexión</h2>
-          <p className="text-sm text-amber-700">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSuggestion = (text: string) => {
+    if (status !== "ready") return;
+    sendMessage({ text });
+  };
 
-  if (!data) return null;
-
-  const balanceColor = data.balance >= 0 ? "text-emerald-600" : "text-red-600";
-  const balanceBg = data.balance >= 0 ? "bg-emerald-50" : "bg-red-50";
+  const isStreaming = status === "streaming";
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mi Presupuesto</h1>
-          <p className="text-sm text-gray-500">
-            Resumen financiero personal
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <select
-            value={month ?? getCurrentMonth()}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {getMonthName(i + 1)}
-              </option>
-            ))}
-          </select>
-          <select
-            value={year ?? getCurrentYear()}
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            {Array.from({ length: 5 }, (_, i) => {
-              const y = getCurrentYear() - 2 + i;
-              return (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      </div>
-
-      {/* Top KPIs */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Ingresos */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Ingresos</span>
-            <div className="rounded-lg bg-emerald-50 p-2">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
+    <div className="flex h-[100dvh] flex-col bg-white md:bg-gray-50">
+      {/* Messages area */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto overscroll-contain"
+      >
+        {messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 pb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+              <Sparkles className="h-8 w-8 text-white" />
             </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl font-bold text-gray-900">
-              {formatCurrency(data.totalIncome)}
-            </span>
-            <div className="mt-1">
-              {deltaIcon(data.totalIncome, data.prevIncome)}
-            </div>
-          </div>
-        </div>
-
-        {/* Gastos totales */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Gastos</span>
-            <div className="rounded-lg bg-red-50 p-2">
-              <TrendingDown className="h-5 w-5 text-red-600" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl font-bold text-gray-900">
-              {formatCurrency(data.totalExpenses)}
-            </span>
-            <p className="mt-1 text-xs text-gray-400">
-              {data.expenseRate.toFixed(0)}% del ingreso
+            <h1 className="mt-5 text-xl font-bold text-gray-900">
+              Budget AN
+            </h1>
+            <p className="mt-1 text-center text-sm text-gray-400 max-w-xs">
+              Tu asistente financiero. Pregunta lo que necesites.
             </p>
-          </div>
-        </div>
 
-        {/* Ahorro */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Ahorro</span>
-            <div className="rounded-lg bg-violet-50 p-2">
-              <PiggyBank className="h-5 w-5 text-violet-600" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl font-bold text-gray-900">
-              {formatCurrency(data.totalSavings)}
-            </span>
-            <p className="mt-1 text-xs text-gray-400">
-              Tasa: {data.savingsRate.toFixed(0)}%
-            </p>
-          </div>
-        </div>
-
-        {/* Balance */}
-        <div className={cn("rounded-xl border p-6 shadow-sm", balanceBg, data.balance >= 0 ? "border-emerald-200" : "border-red-200")}>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500">Balance</span>
-            <div className={cn("rounded-lg p-2", balanceBg)}>
-              <Wallet className={cn("h-5 w-5", balanceColor)} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className={cn("text-2xl font-bold", balanceColor)}>
-              {formatCurrency(data.balance)}
-            </span>
-            <p className="mt-1 text-xs text-gray-400">
-              Ingreso - Todo lo que sale
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Group breakdown cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {GROUP_ORDER.map((group) => {
-          const colors = GROUP_COLORS[group];
-          const Icon = GROUP_ICONS[group];
-          const total = data.byGroup[group] || 0;
-          const categories = CATEGORIES_BY_GROUP[group];
-          const pct = data.totalIncome > 0 ? (total / data.totalIncome) * 100 : 0;
-
-          return (
-            <div
-              key={group}
-              className={cn("rounded-xl border bg-white p-6 shadow-sm", colors.border)}
-            >
-              <button
-                onClick={() => goToMovimientos(group)}
-                className="flex w-full items-center justify-between mb-4 group/header"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={cn("rounded-lg p-2", colors.bg)}>
-                    <Icon className={cn("h-4 w-4", colors.text)} />
+            <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-3">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s.text}
+                  onClick={() => handleSuggestion(s.text)}
+                  className="flex items-center gap-2.5 rounded-2xl border border-gray-100 bg-white p-3.5 text-left shadow-sm transition-all active:scale-[0.98] hover:shadow-md hover:border-gray-200"
+                >
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", s.color)}>
+                    <s.icon className="h-4 w-4" />
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {GROUP_LABELS[group]}
+                  <span className="text-sm font-medium text-gray-700 leading-tight">
+                    {s.text}
                   </span>
-                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover/header:text-indigo-500 transition-colors" />
-                </div>
-                <span className="text-lg font-bold text-gray-900">
-                  {formatCurrency(total)}
-                </span>
-              </button>
-
-              {/* Progress bar relative to income */}
-              {group !== "INCOME" && data.totalIncome > 0 && (
-                <div className="mb-4">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>{pct.toFixed(0)}% del ingreso</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-2xl px-4 py-4 md:py-6">
+            {messages.map((message) => (
+              <div key={message.id} className="mb-4">
+                {message.role === "user" ? (
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md bg-indigo-600 px-4 py-2.5 text-sm text-white">
+                      {message.parts.map((part, i) =>
+                        part.type === "text" ? <span key={i}>{part.text}</span> : null
+                      )}
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-100">
-                    <div
-                      className={cn("h-2 rounded-full transition-all", colors.dot)}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
+                ) : (
+                  <div className="flex gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 mt-0.5">
+                      <Bot className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1 text-[0.9rem] leading-relaxed text-gray-800">
+                      {message.parts.map((part, i) => {
+                        if (part.type === "text") {
+                          return (
+                            <div
+                              key={i}
+                              className="prose prose-sm max-w-none prose-p:my-1.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-table:my-2 prose-pre:my-2 prose-hr:my-3 prose-strong:text-gray-900 prose-td:px-3 prose-td:py-1.5 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:font-semibold prose-table:text-sm"
+                              dangerouslySetInnerHTML={{
+                                __html: formatMarkdown(part.text),
+                              }}
+                            />
+                          );
+                        }
+                        if (part.type.startsWith("tool-")) {
+                          const p = part as { toolCallId: string; toolName?: string; state?: string };
+                          if (p.state === "result") return null;
+                          return (
+                            <div key={i} className="my-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              {toolLabel(p.toolName || "unknown")}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Category detail */}
-              <div className="space-y-1">
-                {categories.map((cat) => {
-                  const catAmt = data.byCategory[cat] || 0;
-                  if (catAmt === 0) return null;
-                  const catPct = total > 0 ? (catAmt / total) * 100 : 0;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => goToMovimientos(group, cat)}
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 transition-colors group/cat"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={cn("h-1.5 w-1.5 rounded-full", colors.dot)} />
-                        <span className="text-gray-500 group-hover/cat:text-gray-900">
-                          {CATEGORY_LABELS[cat]}
-                        </span>
-                        <span className="text-xs text-gray-300">
-                          {catPct.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium text-gray-700">
-                          {formatCurrency(catAmt)}
-                        </span>
-                        <ChevronRight className="h-3 w-3 text-gray-200 group-hover/cat:text-indigo-500 transition-colors" />
-                      </div>
-                    </button>
-                  );
-                })}
-                {categories.every((cat) => !(data.byCategory[cat])) && (
-                  <p className="text-xs text-gray-300 italic px-2">Sin movimientos</p>
                 )}
               </div>
-            </div>
-          );
-        })}
+            ))}
+            {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
+              <div className="flex gap-2.5 mb-4">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600">
+                  <Bot className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Pensando...
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Trend Charts */}
-      {trends && trends.length > 1 && (
-        <div className="mb-6 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Ingresos vs Gastos
-            </h2>
-            <IncomeVsExpensesChart data={trends} />
+      {/* Input bar - fixed at bottom */}
+      <div className="border-t border-gray-100 bg-white px-3 pb-[env(safe-area-inset-bottom,8px)] pt-2 md:px-4 md:pb-4 md:pt-3">
+        {messages.length > 0 && (
+          <div className="mb-2 flex justify-center">
+            <button
+              onClick={() => setMessages([])}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Nueva conversación
+            </button>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Evolución por grupo
-            </h2>
-            <GroupTrendChart data={trends} />
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {data.transactionCount === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-          <Wallet className="mx-auto h-12 w-12 text-gray-300" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-600">
-            No hay movimientos este mes
-          </h3>
-          <p className="mt-2 text-sm text-gray-400">
-            Ve a <a href="/household" className="text-indigo-600 underline">Movimientos</a> para agregar tus ingresos y gastos.
-          </p>
-        </div>
-      )}
+        )}
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto flex max-w-2xl items-center gap-2"
+        >
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Pregunta sobre tus finanzas..."
+            disabled={isStreaming}
+            className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 transition-all"
+          />
+          <button
+            type="submit"
+            disabled={isStreaming || !input.trim()}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-40 disabled:hover:bg-indigo-600"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </form>
+      </div>
     </div>
   );
+}
+
+function toolLabel(name: string): string {
+  const labels: Record<string, string> = {
+    queryTransactions: "Buscando transacciones...",
+    getSummary: "Calculando resumen...",
+    getTrends: "Analizando tendencias...",
+    reclassify: "Reclasificando...",
+    getSubscriptions: "Consultando suscripciones...",
+    getNetWorth: "Consultando patrimonio...",
+    deleteTransaction: "Eliminando transacción...",
+  };
+  return labels[name] || "Procesando...";
+}
+
+function formatMarkdown(text: string): string {
+  let html = text;
+
+  // Tables
+  const tableRegex = /(\|.+\|[\r\n]+\|[\s:|-]+\|[\r\n]+((\|.+\|[\r\n]*)+))/g;
+  html = html.replace(tableRegex, (match) => {
+    const rows = match.trim().split("\n").filter((r) => r.trim());
+    if (rows.length < 2) return match;
+    const headers = rows[0].split("|").filter((c) => c.trim()).map((c) => c.trim());
+    const dataRows = rows.slice(2);
+    let table = '<table class="w-full border-collapse rounded-lg overflow-hidden text-sm"><thead><tr>';
+    headers.forEach((h) => {
+      table += `<th class="bg-gray-50 border-b border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">${h}</th>`;
+    });
+    table += "</tr></thead><tbody>";
+    dataRows.forEach((row, i) => {
+      const cells = row.split("|").filter((c) => c.trim()).map((c) => c.trim());
+      const bg = i % 2 === 0 ? "" : "bg-gray-50/50";
+      table += `<tr class="${bg}">`;
+      cells.forEach((c) => {
+        const formatted = c
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.*?)\*/g, "<em>$1</em>");
+        table += `<td class="border-b border-gray-100 px-3 py-2 text-gray-700">${formatted}</td>`;
+      });
+      table += "</tr>";
+    });
+    table += "</tbody></table>";
+    return table;
+  });
+
+  // Headers
+  html = html.replace(/^### (.*$)/gm, '<h3 class="text-base font-semibold text-gray-900 mt-3 mb-1">$1</h3>');
+  html = html.replace(/^## (.*$)/gm, '<h2 class="text-lg font-semibold text-gray-900 mt-4 mb-1">$1</h2>');
+  html = html.replace(/^# (.*$)/gm, '<h1 class="text-xl font-bold text-gray-900 mt-4 mb-2">$1</h1>');
+
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr class="border-gray-200 my-3" />');
+
+  // Bold / italic / code
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+  html = html.replace(/`(.*?)`/g, '<code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-indigo-700">$1</code>');
+
+  // Lists
+  html = html.replace(/^- (.*$)/gm, '<li class="ml-4 list-disc text-gray-700">$1</li>');
+  html = html.replace(/^(\d+)\. (.*$)/gm, '<li class="ml-4 list-decimal text-gray-700">$2</li>');
+
+  // Blockquotes
+  html = html.replace(/^> (.*$)/gm, '<blockquote class="border-l-3 border-indigo-300 bg-indigo-50/50 pl-3 py-1 text-sm text-gray-600 rounded-r-lg my-1.5">$1</blockquote>');
+
+  // Paragraphs
+  html = html.replace(/\n{2,}/g, '</p><p class="my-1.5">');
+  html = html.replace(/\n/g, "<br />");
+
+  return html;
 }

@@ -1,17 +1,61 @@
 @import "tailwindcss";
 
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: #f9fafb;
   color: #111827;
+  overscroll-behavior: none;
 }
 
 select,
 input {
   outline: none;
+  font-size: 16px; /* prevents zoom on iOS */
 }
 
 select:focus,
 input:focus {
   border-color: #6366f1;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+/* Smooth scrolling for chat */
+.overscroll-contain {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar in chat on mobile */
+@media (max-width: 768px) {
+  .overscroll-contain::-webkit-scrollbar {
+    display: none;
+  }
+  .overscroll-contain {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Prose table styling override */
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.prose th {
+  text-align: left;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.prose td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
 }
