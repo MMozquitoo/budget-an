@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -10,6 +11,7 @@ import {
   AlertTriangle,
   CreditCard,
   DollarSign,
+  ChevronRight,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -23,6 +25,7 @@ import {
   CATEGORIES_BY_GROUP,
   GROUP_ORDER,
 } from "@/lib/utils";
+import { IncomeVsExpensesChart, GroupTrendChart } from "@/components/TrendChart";
 
 interface SummaryData {
   month: number;
@@ -74,11 +77,22 @@ function deltaIcon(current: number, previous: number) {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [data, setData] = useState<SummaryData | null>(null);
+  const [trends, setTrends] = useState<any[] | null>(null);
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const goToMovimientos = (group?: string, category?: string) => {
+    const params = new URLSearchParams();
+    if (month) params.set("month", String(month));
+    if (year) params.set("year", String(year));
+    if (group) params.set("group", group);
+    if (category) params.set("category", category);
+    router.push(`/household?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (month === null || year === null) {
@@ -96,12 +110,17 @@ export default function Dashboard() {
     }
     setLoading(true);
     setError(null);
-    fetch(`/api/transactions/summary?month=${month}&year=${year}`)
-      .then((r) => {
+    Promise.all([
+      fetch(`/api/transactions/summary?month=${month}&year=${year}`).then((r) => {
         if (!r.ok) throw new Error("API error");
         return r.json();
+      }),
+      fetch(`/api/transactions/trends?months=8`).then((r) => r.ok ? r.json() : []),
+    ])
+      .then(([summaryData, trendsData]) => {
+        setData(summaryData);
+        setTrends(trendsData);
       })
-      .then(setData)
       .catch(() => setError("No se pudo conectar a la base de datos."))
       .finally(() => setLoading(false));
   }, [month, year]);
@@ -258,7 +277,10 @@ export default function Dashboard() {
               key={group}
               className={cn("rounded-xl border bg-white p-6 shadow-sm", colors.border)}
             >
-              <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => goToMovimientos(group)}
+                className="flex w-full items-center justify-between mb-4 group/header"
+              >
                 <div className="flex items-center gap-2">
                   <div className={cn("rounded-lg p-2", colors.bg)}>
                     <Icon className={cn("h-4 w-4", colors.text)} />
@@ -266,11 +288,12 @@ export default function Dashboard() {
                   <span className="text-sm font-semibold text-gray-900">
                     {GROUP_LABELS[group]}
                   </span>
+                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover/header:text-indigo-500 transition-colors" />
                 </div>
                 <span className="text-lg font-bold text-gray-900">
                   {formatCurrency(total)}
                 </span>
-              </div>
+              </button>
 
               {/* Progress bar relative to income */}
               {group !== "INCOME" && data.totalIncome > 0 && (
@@ -288,27 +311,61 @@ export default function Dashboard() {
               )}
 
               {/* Category detail */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {categories.map((cat) => {
                   const catAmt = data.byCategory[cat] || 0;
                   if (catAmt === 0) return null;
+                  const catPct = total > 0 ? (catAmt / total) * 100 : 0;
                   return (
-                    <div key={cat} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">{CATEGORY_LABELS[cat]}</span>
-                      <span className="font-medium text-gray-700">
-                        {formatCurrency(catAmt)}
-                      </span>
-                    </div>
+                    <button
+                      key={cat}
+                      onClick={() => goToMovimientos(group, cat)}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 transition-colors group/cat"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn("h-1.5 w-1.5 rounded-full", colors.dot)} />
+                        <span className="text-gray-500 group-hover/cat:text-gray-900">
+                          {CATEGORY_LABELS[cat]}
+                        </span>
+                        <span className="text-xs text-gray-300">
+                          {catPct.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-700">
+                          {formatCurrency(catAmt)}
+                        </span>
+                        <ChevronRight className="h-3 w-3 text-gray-200 group-hover/cat:text-indigo-500 transition-colors" />
+                      </div>
+                    </button>
                   );
                 })}
                 {categories.every((cat) => !(data.byCategory[cat])) && (
-                  <p className="text-xs text-gray-300 italic">Sin movimientos</p>
+                  <p className="text-xs text-gray-300 italic px-2">Sin movimientos</p>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Trend Charts */}
+      {trends && trends.length > 1 && (
+        <div className="mb-6 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Ingresos vs Gastos
+            </h2>
+            <IncomeVsExpensesChart data={trends} />
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Evolución por grupo
+            </h2>
+            <GroupTrendChart data={trends} />
+          </div>
+        </div>
+      )}
 
       {/* Empty state */}
       {data.transactionCount === 0 && (

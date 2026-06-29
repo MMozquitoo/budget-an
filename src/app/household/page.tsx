@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Trash2, X, Filter } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Plus, Trash2, X, Filter, ArrowLeft } from "lucide-react";
 import {
   formatCurrency,
   getCurrentMonth,
@@ -27,6 +28,19 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+      </div>
+    }>
+      <TransactionsContent />
+    </Suspense>
+  );
+}
+
+function TransactionsContent() {
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
@@ -35,6 +49,7 @@ export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filterGroup, setFilterGroup] = useState<string>("ALL");
+  const [filterCategory, setFilterCategory] = useState<string>("ALL");
 
   // Form state
   const [formDate, setFormDate] = useState("");
@@ -60,18 +75,32 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     if (!initialized) {
-      fetch("/api/transactions/latest")
-        .then((r) => r.json())
-        .then((d) => {
-          setMonth(d.month);
-          setYear(d.year);
-          setInitialized(true);
-        })
-        .catch(() => {
-          setMonth(getCurrentMonth());
-          setYear(getCurrentYear());
-          setInitialized(true);
-        });
+      const qMonth = searchParams.get("month");
+      const qYear = searchParams.get("year");
+      const qGroup = searchParams.get("group");
+      const qCategory = searchParams.get("category");
+
+      if (qGroup) setFilterGroup(qGroup);
+      if (qCategory) setFilterCategory(qCategory);
+
+      if (qMonth && qYear) {
+        setMonth(Number(qMonth));
+        setYear(Number(qYear));
+        setInitialized(true);
+      } else {
+        fetch("/api/transactions/latest")
+          .then((r) => r.json())
+          .then((d) => {
+            setMonth(d.month);
+            setYear(d.year);
+            setInitialized(true);
+          })
+          .catch(() => {
+            setMonth(getCurrentMonth());
+            setYear(getCurrentYear());
+            setInitialized(true);
+          });
+      }
       return;
     }
     fetchTransactions();
@@ -120,11 +149,26 @@ export default function TransactionsPage() {
     fetchTransactions();
   };
 
-  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const filtered = filterCategory !== "ALL"
+    ? transactions.filter((t) => t.category === filterCategory)
+    : transactions;
+
+  const total = filtered.reduce((sum, t) => sum + t.amount, 0);
 
   const groupTotals = GROUP_ORDER.reduce((acc, g) => {
     acc[g] = transactions
       .filter((t) => t.group === g)
+      .reduce((sum, t) => sum + t.amount, 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const activeCats = filterGroup !== "ALL"
+    ? CATEGORIES_BY_GROUP[filterGroup] || []
+    : [];
+
+  const categoryTotals = activeCats.reduce((acc, cat) => {
+    acc[cat] = transactions
+      .filter((t) => t.category === cat)
       .reduce((sum, t) => sum + t.amount, 0);
     return acc;
   }, {} as Record<string, number>);
@@ -176,7 +220,10 @@ export default function TransactionsPage() {
           return (
             <button
               key={g}
-              onClick={() => setFilterGroup(filterGroup === g ? "ALL" : g)}
+              onClick={() => {
+                setFilterCategory("ALL");
+                setFilterGroup(filterGroup === g ? "ALL" : g);
+              }}
               className={cn(
                 "rounded-xl border p-4 text-left transition-all",
                 filterGroup === g
@@ -195,19 +242,62 @@ export default function TransactionsPage() {
         })}
       </div>
 
-      {/* Filter indicator */}
-      {filterGroup !== "ALL" && (
-        <div className="mb-4 flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-400" />
-          <span className="text-sm text-gray-500">
-            Filtrando por: <strong>{GROUP_LABELS[filterGroup]}</strong>
-          </span>
-          <button
-            onClick={() => setFilterGroup("ALL")}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
-          >
-            Quitar filtro
-          </button>
+      {/* Category breakdown when group is selected */}
+      {filterGroup !== "ALL" && activeCats.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => { setFilterGroup("ALL"); setFilterCategory("ALL"); }}
+              className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Todos
+            </button>
+            <span className="text-sm text-gray-400">/</span>
+            <span className="text-sm font-medium text-gray-700">
+              {GROUP_LABELS[filterGroup]}
+            </span>
+            {filterCategory !== "ALL" && (
+              <>
+                <span className="text-sm text-gray-400">/</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {CATEGORY_LABELS[filterCategory]}
+                </span>
+              </>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterCategory("ALL")}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                filterCategory === "ALL"
+                  ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              Todas ({transactions.length})
+            </button>
+            {activeCats.map((cat) => {
+              const catAmt = categoryTotals[cat] || 0;
+              const catCount = transactions.filter(t => t.category === cat).length;
+              if (catCount === 0) return null;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(filterCategory === cat ? "ALL" : cat)}
+                  className={cn(
+                    "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                    filterCategory === cat
+                      ? cn(GROUP_COLORS[filterGroup].bg, GROUP_COLORS[filterGroup].border, GROUP_COLORS[filterGroup].text)
+                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  {CATEGORY_LABELS[cat]} ({catCount}) · {formatCurrency(catAmt)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -215,9 +305,9 @@ export default function TransactionsPage() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
-            {filterGroup === "ALL" ? "Todos los movimientos" : GROUP_LABELS[filterGroup]}
+            {filterCategory !== "ALL" ? CATEGORY_LABELS[filterCategory] : filterGroup === "ALL" ? "Todos los movimientos" : GROUP_LABELS[filterGroup]}
             <span className="ml-2 text-sm font-normal text-gray-400">
-              ({transactions.length}) &middot; Total: {formatCurrency(total)}
+              ({filtered.length}) &middot; Total: {formatCurrency(total)}
             </span>
           </h2>
           <button
@@ -359,7 +449,7 @@ export default function TransactionsPage() {
           <div className="flex h-32 items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
           </div>
-        ) : transactions.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">
             No hay movimientos este mes
           </p>
@@ -379,7 +469,7 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {transactions.map((t) => {
+                {filtered.map((t) => {
                   const colors = GROUP_COLORS[t.group] || GROUP_COLORS.VARIABLE_EXPENSE;
                   return (
                     <tr key={t.id}>

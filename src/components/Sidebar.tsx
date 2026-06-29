@@ -6,6 +6,10 @@ import {
   Compass,
   LayoutDashboard,
   ListPlus,
+  CalendarDays,
+  Repeat,
+  TrendingUp,
+  Settings,
   Menu,
   X,
 } from "lucide-react";
@@ -15,6 +19,10 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Resumen", href: "/", icon: LayoutDashboard },
   { name: "Movimientos", href: "/household", icon: ListPlus },
+  { name: "Calendario", href: "/calendar", icon: CalendarDays },
+  { name: "Suscripciones", href: "/subscriptions", icon: Repeat },
+  { name: "Patrimonio", href: "/net-worth", icon: TrendingUp },
+  { name: "Reglas", href: "/rules", icon: Settings },
 ];
 
 export default function Sidebar() {

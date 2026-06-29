@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
     where.group = group;
   }
 
+  const recurring = sp.get("recurring");
+  if (recurring === "true") {
+    where.recurring = true;
+  }
+
   const transactions = await prisma.personalTransaction.findMany({
     where,
     orderBy: { date: "desc" },

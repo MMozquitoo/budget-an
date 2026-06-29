@@ -59,12 +59,65 @@ model PersonalTransaction {
   description String
   notes       String?
   recurring   Boolean             @default(false)
+  parentId    String?
+  parent      PersonalTransaction?  @relation("TransactionSplits", fields: [parentId], references: [id])
+  splits      PersonalTransaction[] @relation("TransactionSplits")
   createdAt   DateTime            @default(now())
 
   @@index([date])
   @@index([group])
   @@index([category])
+  @@index([parentId])
   @@map("personal_transactions")
+}
+
+// ──────────────────────────────────────────────
+// CLASSIFICATION RULES — Auto-categorize imports
+// ──────────────────────────────────────────────
+
+model ClassificationRule {
+  id          String              @id @default(cuid())
+  name        String
+  priority    Int                 @default(0)
+  matchField  String              @default("description")
+  matchType   MatchType           @default(CONTAINS)
+  matchValue  String
+  group       TransactionGroup
+  category    TransactionCategory
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+
+  @@index([active])
+  @@index([priority])
+  @@map("classification_rules")
+}
+
+enum MatchType {
+  CONTAINS
+  STARTS_WITH
+  ENDS_WITH
+  EXACT
+  REGEX
+}
+
+// ──────────────────────────────────────────────
+// NET WORTH — Monthly snapshot tracking
+// ──────────────────────────────────────────────
+
+model NetWorthSnapshot {
+  id          String   @id @default(cuid())
+  month       Int
+  year        Int
+  cash        Decimal  @db.Decimal(12, 2) @default(0)
+  savings     Decimal  @db.Decimal(12, 2) @default(0)
+  investments Decimal  @db.Decimal(12, 2) @default(0)
+  property    Decimal  @db.Decimal(12, 2) @default(0)
+  debt        Decimal  @db.Decimal(12, 2) @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@unique([month, year])
+  @@map("net_worth_snapshots")
 }
 
 enum TransactionGroup {
