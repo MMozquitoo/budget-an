@@ -21,6 +21,22 @@ const SELF_TRANSFER_PATTERNS = [
   /rej vir inst adrien naeem/i,
   // Refunds/bounces between own accounts
   /vir inst flatlooker/i, // will reclassify separately
+  // Transfers between own banks (Boursorama, Revolut, SG/Logitel, CIC, N26)
+  /adrien naeem.*sent from revolut/i,
+  /adrien naeem.*sent from/i,
+  /adrien naeem.*boursorama.*sent/i,
+  /adrien naeem virement depuis boursobank/i,
+  /to adrien naeem sent from/i,
+  /adrien naeem.*cic sent from/i,
+  /adrien naeem revolut sent from/i,
+  /vir inst naeem adrien.*boursobank/i,
+  /vir instantane emis logitel pour:.*quirimit/i,
+  /naeem ou rodriguez.*virement/i,
+  /vir perm pour:.*naeem.*virement cav/i,
+  // Spouse transfers (also internal household)
+  /claudia.*rodriguez/i,
+  /rodriguez.*claudia/i,
+  /rodriguez mora/i,
 ];
 
 // These look like self-transfers but are actually real
@@ -30,6 +46,8 @@ const KEEP_PATTERNS = [
   /squires/i,
   /sent from qonto/i,
   /make commerce/i,
+  /isf/i,
+  /epargne nicolas/i,
 ];
 
 // Flatlooker = rent payment service

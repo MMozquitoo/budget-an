@@ -10,6 +10,7 @@ import {
   Repeat,
   TrendingUp,
   Settings,
+  MessageCircle,
   Menu,
   X,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Suscripciones", href: "/subscriptions", icon: Repeat },
   { name: "Patrimonio", href: "/net-worth", icon: TrendingUp },
   { name: "Reglas", href: "/rules", icon: Settings },
+  { name: "Asistente", href: "/chat", icon: MessageCircle },
 ];
 
 export default function Sidebar() {

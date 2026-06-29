@@ -14,8 +14,11 @@
     "db:studio": "npx prisma studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.2",
+    "@ai-sdk/react": "^4.0.7",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "ai": "^7.0.6",
     "date-fns": "^4.3.0",
     "lucide-react": "^1.17.0",
     "next": "16.2.6",

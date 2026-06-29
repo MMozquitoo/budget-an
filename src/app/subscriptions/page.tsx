@@ -24,16 +24,27 @@ export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const SUBSCRIPTION_CATEGORIES = new Set([
+    "SUBSCRIPTIONS", "INSURANCE", "UTILITIES", "INTERNET_PHONE",
+    "TRANSPORT_FIXED", "RENT", "CREDIT_PAYMENT", "EDUCATION_FIXED",
+    "INVESTMENT", "GENERAL_SAVINGS", "INSTALLMENT", "PENDING_PAYMENT",
+  ]);
+
   useEffect(() => {
     fetch("/api/transactions?recurring=true")
       .then((r) => r.json())
       .then((data: Transaction[]) => {
+        const fixed = data.filter((t) => SUBSCRIPTION_CATEGORIES.has(t.category));
         const seen = new Map<string, Transaction>();
-        const sorted = [...data].sort(
+        const sorted = [...fixed].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         for (const t of sorted) {
-          const key = t.description.toLowerCase().trim();
+          const key = t.description.toLowerCase().trim()
+            .replace(/rum\s+\S+/gi, "rum")
+            .replace(/\d{2}\/\d{2}\/\d{4}/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
           if (!seen.has(key)) seen.set(key, t);
         }
         setSubscriptions(Array.from(seen.values()));
