@@ -9,8 +9,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        const hash = process.env.AUTH_PASSWORD_HASH;
-        if (!hash || !credentials?.password) return null;
+        const hashB64 = process.env.AUTH_PASSWORD_HASH;
+        if (!hashB64 || !credentials?.password) return null;
+        const hash = Buffer.from(hashB64, "base64").toString();
         const valid = await bcrypt.compare(
           credentials.password as string,
           hash
