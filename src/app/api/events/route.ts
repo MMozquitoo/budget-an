@@ -54,15 +54,22 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const body = await request.json();
-  const { id, ...fields } = body;
+  const { id } = body;
 
   if (!id) return Response.json({ error: "id required" }, { status: 400 });
 
-  if (fields.date) fields.date = new Date(fields.date);
+  const data: Record<string, unknown> = {};
+  if (body.name) data.name = body.name;
+  if (body.date) data.date = new Date(body.date);
+  if (body.revenue !== undefined) data.revenue = body.revenue;
+  if (body.cost !== undefined) data.cost = body.cost;
+  if (body.businessLineId) data.businessLineId = body.businessLineId;
+  if (body.status) data.status = body.status;
+  if (body.notes !== undefined) data.notes = body.notes;
 
   const event = await prisma.event.update({
     where: { id },
-    data: fields,
+    data,
     include: { businessLine: true },
   });
 

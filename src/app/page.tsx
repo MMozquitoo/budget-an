@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TrendsChart, SummaryChart, NetWorthChart } from "@/components/ChatCharts";
+import DOMPurify from "dompurify";
 
 const SUGGESTIONS = [
   { icon: Receipt, text: "Résumé du mois", color: "text-blue-600 bg-blue-50" },
@@ -114,7 +115,7 @@ export default function ChatPage() {
                               key={i}
                               className="prose prose-sm max-w-none prose-p:my-1.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-table:my-2 prose-pre:my-2 prose-hr:my-3 prose-strong:text-gray-900 prose-td:px-3 prose-td:py-1.5 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:font-semibold prose-table:text-sm"
                               dangerouslySetInnerHTML={{
-                                __html: formatMarkdown(part.text),
+                                __html: DOMPurify.sanitize(formatMarkdown(part.text)),
                               }}
                             />
                           );

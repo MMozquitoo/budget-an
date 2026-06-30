@@ -44,16 +44,28 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const body = await request.json();
-  const { id, ...fields } = body;
+  const { id } = body;
 
   if (!id) return Response.json({ error: "id required" }, { status: 400 });
 
-  if (fields.date) fields.date = new Date(fields.date);
-  if (fields.reviewDate) fields.reviewDate = new Date(fields.reviewDate);
+  const data: Record<string, unknown> = {};
+  if (body.date) data.date = new Date(body.date);
+  if (body.scope) data.scope = body.scope;
+  if (body.title) data.title = body.title;
+  if (body.amount !== undefined) data.amount = body.amount;
+  if (body.thresholdTriggered !== undefined) data.thresholdTriggered = body.thresholdTriggered;
+  if (body.category) data.category = body.category;
+  if (body.businessLineId !== undefined) data.businessLineId = body.businessLineId;
+  if (body.eventId !== undefined) data.eventId = body.eventId;
+  if (body.rationale !== undefined) data.rationale = body.rationale;
+  if (body.expectedROI !== undefined) data.expectedROI = body.expectedROI;
+  if (body.actualROI !== undefined) data.actualROI = body.actualROI;
+  if (body.status) data.status = body.status;
+  if (body.reviewDate !== undefined) data.reviewDate = body.reviewDate ? new Date(body.reviewDate) : null;
 
   const decision = await prisma.decision.update({
     where: { id },
-    data: fields,
+    data,
     include: { businessLine: true, event: true },
   });
 

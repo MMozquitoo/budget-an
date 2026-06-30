@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import { AuthLayout } from "@/components/AuthLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,8 +26,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.className} h-full`}>
       <body className="h-full bg-gray-50">
-        <Sidebar />
-        <main className="md:ml-56 min-h-full pb-16 md:pb-0">{children}</main>
+        <AuthLayout>{children}</AuthLayout>
       </body>
     </html>
   );

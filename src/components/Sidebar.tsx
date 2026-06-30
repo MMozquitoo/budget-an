@@ -11,7 +11,9 @@ import {
   Settings,
   MessageCircle,
   Sparkles,
+  LogOut,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -90,8 +92,14 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        <div className="mt-auto border-t border-gray-800 p-4 text-[11px] text-gray-600">
-          Finances d'Adrien Naeem
+        <div className="mt-auto border-t border-gray-800 p-4">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+          >
+            <LogOut size={14} />
+            Déconnexion
+          </button>
         </div>
       </aside>
 

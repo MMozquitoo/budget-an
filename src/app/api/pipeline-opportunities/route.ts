@@ -49,15 +49,23 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const body = await request.json();
-  const { id, ...fields } = body;
+  const { id } = body;
 
   if (!id) return Response.json({ error: "id required" }, { status: 400 });
 
-  if (fields.closeDate) fields.closeDate = new Date(fields.closeDate);
+  const data: Record<string, unknown> = {};
+  if (body.account) data.account = body.account;
+  if (body.value !== undefined) data.value = body.value;
+  if (body.probability !== undefined) data.probability = body.probability;
+  if (body.closeDate) data.closeDate = new Date(body.closeDate);
+  if (body.owner !== undefined) data.owner = body.owner;
+  if (body.businessLineId) data.businessLineId = body.businessLineId;
+  if (body.status) data.status = body.status;
+  if (body.notes !== undefined) data.notes = body.notes;
 
   const opportunity = await prisma.pipelineOpportunity.update({
     where: { id },
-    data: fields,
+    data,
     include: { businessLine: true },
   });
 
