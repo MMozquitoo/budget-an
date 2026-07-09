@@ -28,6 +28,67 @@ export function getCurrentMonth(): number {
   return new Date().getMonth() + 1;
 }
 
+// Legacy rows (household/business/revenue/income) were entered at local-midnight
+// in Europe/Paris, so a `new Date(year, month-1, 1)` boundary evaluated in UTC on
+// Vercel misbuckets any 1st-of-month row into the previous month. These helpers
+// build the [start-of-month, start-of-next-month) window as UTC instants that
+// correspond to Paris wall-clock midnight, so filtering is timezone-correct
+// regardless of the server's timezone.
+function zonedWallMidnightUtc(year: number, month: number, timeZone: string): Date {
+  const guessMs = Date.UTC(year, month - 1, 1, 0, 0, 0);
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = dtf.formatToParts(new Date(guessMs));
+  const map: Record<string, number> = {};
+  for (const p of parts) if (p.type !== "literal") map[p.type] = Number(p.value);
+  const asIfUtcMs = Date.UTC(
+    map.year,
+    map.month - 1,
+    map.day,
+    map.hour,
+    map.minute,
+    map.second
+  );
+  const offsetMs = asIfUtcMs - guessMs;
+  return new Date(guessMs - offsetMs);
+}
+
+export function monthRange(
+  year: number,
+  month: number,
+  timeZone = "Europe/Paris"
+): { gte: Date; lt: Date } {
+  const gte = zonedWallMidnightUtc(year, month, timeZone);
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const lt = zonedWallMidnightUtc(nextYear, nextMonth, timeZone);
+  return { gte, lt };
+}
+
+// Window covering `count` whole months ending at (and excluding) the start of
+// `year`-`month`. Used for rolling-average windows.
+export function monthRangeBack(
+  year: number,
+  month: number,
+  count: number,
+  timeZone = "Europe/Paris"
+): { gte: Date; lt: Date } {
+  const lt = zonedWallMidnightUtc(year, month, timeZone);
+  const startTotal = year * 12 + (month - 1) - count;
+  const startYear = Math.floor(startTotal / 12);
+  const startMonth = (startTotal % 12) + 1;
+  const gte = zonedWallMidnightUtc(startYear, startMonth, timeZone);
+  return { gte, lt };
+}
+
 export function getCurrentYear(): number {
   return new Date().getFullYear();
 }

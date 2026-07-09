@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { monthRange, monthRangeBack } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
 // FIX 2: Configurable tax reserve placeholder.
@@ -19,17 +20,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
-  const dateFilter = { gte: startDate, lte: endDate };
+  const dateFilter = monthRange(year, month);
 
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
 
-  // FIX 3: Rolling average — get prior months' data
+  // FIX 3: Rolling average — the `rollingMonths` whole months before the current one
   const rollingMonths = 3;
-  const rollingStart = new Date(year, month - 1 - rollingMonths, 1);
-  const rollingEnd = new Date(year, month - 1, 0, 23, 59, 59); // end of previous month
+  const rollingWindow = monthRangeBack(year, month, rollingMonths);
 
   const [
     householdExpenses,
@@ -60,11 +58,11 @@ export async function GET(request: NextRequest) {
     }),
     prisma.pipelineOpportunity.findMany({ where: { status: "OPEN" } }),
     prisma.householdExpense.findMany({
-      where: { date: { gte: rollingStart, lte: rollingEnd } },
+      where: { date: rollingWindow },
     }),
     prisma.businessExpense.findMany({
       where: {
-        date: { gte: rollingStart, lte: rollingEnd },
+        date: rollingWindow,
         isOwnerDraw: false,
       },
     }),

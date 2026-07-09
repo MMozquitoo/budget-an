@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { safe, toValidDate, badRequest } from "@/lib/api";
 
-export async function GET(request: NextRequest) {
+export const GET = safe(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const status = searchParams.get("status");
   const businessLineId = searchParams.get("businessLineId");
@@ -23,17 +24,20 @@ export async function GET(request: NextRequest) {
       value: Number(o.value),
     }))
   );
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
+
+  const closeDate = toValidDate(body.closeDate);
+  if (closeDate === undefined) return badRequest("Invalid closeDate");
 
   const opportunity = await prisma.pipelineOpportunity.create({
     data: {
       account: body.account,
       value: body.value,
       probability: body.probability,
-      closeDate: new Date(body.closeDate),
+      closeDate,
       owner: body.owner,
       businessLineId: body.businessLineId,
       notes: body.notes,
@@ -45,13 +49,13 @@ export async function POST(request: NextRequest) {
     { ...opportunity, value: Number(opportunity.value) },
     { status: 201 }
   );
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = safe(async (request: NextRequest) => {
   const body = await request.json();
   const { id } = body;
 
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   const data: Record<string, unknown> = {};
   if (body.account) data.account = body.account;
@@ -73,12 +77,12 @@ export async function PUT(request: NextRequest) {
     ...opportunity,
     value: Number(opportunity.value),
   });
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = safe(async (request: NextRequest) => {
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   await prisma.pipelineOpportunity.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});

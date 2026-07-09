@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Trash2, X, Filter, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, X, ArrowLeft } from "lucide-react";
 import {
   formatCurrency,
   getCurrentMonth,
@@ -44,8 +44,13 @@ function TransactionsContent() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const didBootstrap = useRef(false);
+  // True once the month/year has been chosen explicitly (URL param or the user
+  // touching a selector). Guards against the async /latest bootstrap overwriting
+  // a month the user picked while it was still in flight.
+  const monthChosen = useRef(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filterGroup, setFilterGroup] = useState<string>("ALL");
@@ -63,48 +68,62 @@ function TransactionsContent() {
   const fetchTransactions = () => {
     if (month === null || year === null) return;
     setLoading(true);
-    const groupParam = filterGroup !== "ALL" ? `&group=${filterGroup}` : "";
-    fetch(`/api/transactions?month=${month}&year=${year}${groupParam}`)
+    setError(null);
+    fetch(`/api/transactions?month=${month}&year=${year}`)
       .then((r) => {
-        if (!r.ok) throw new Error("API error");
+        if (!r.ok) throw new Error(`API ${r.status}`);
         return r.json();
       })
       .then(setTransactions)
+      .catch(() => {
+        setTransactions([]);
+        setError("Impossible de charger les opérations de ce mois.");
+      })
       .finally(() => setLoading(false));
   };
 
+  // Bootstrap the selected month/year once on mount: from the URL if present,
+  // otherwise from the month of the latest transaction.
   useEffect(() => {
-    if (!initialized) {
-      const qMonth = searchParams.get("month");
-      const qYear = searchParams.get("year");
-      const qGroup = searchParams.get("group");
-      const qCategory = searchParams.get("category");
+    if (didBootstrap.current) return;
+    didBootstrap.current = true;
 
-      if (qGroup) setFilterGroup(qGroup);
-      if (qCategory) setFilterCategory(qCategory);
+    const qMonth = searchParams.get("month");
+    const qYear = searchParams.get("year");
+    const qGroup = searchParams.get("group");
+    const qCategory = searchParams.get("category");
 
-      if (qMonth && qYear) {
-        setMonth(Number(qMonth));
-        setYear(Number(qYear));
-        setInitialized(true);
-      } else {
-        fetch("/api/transactions/latest")
-          .then((r) => r.json())
-          .then((d) => {
-            setMonth(d.month);
-            setYear(d.year);
-            setInitialized(true);
-          })
-          .catch(() => {
-            setMonth(getCurrentMonth());
-            setYear(getCurrentYear());
-            setInitialized(true);
-          });
-      }
+    if (qGroup) setFilterGroup(qGroup);
+    if (qCategory) setFilterCategory(qCategory);
+
+    if (qMonth && qYear) {
+      monthChosen.current = true;
+      setMonth(Number(qMonth));
+      setYear(Number(qYear));
       return;
     }
+
+    fetch("/api/transactions/latest")
+      .then((r) => r.json())
+      .then((d) => {
+        if (monthChosen.current) return; // user already picked — don't overwrite
+        setMonth(d.month);
+        setYear(d.year);
+      })
+      .catch(() => {
+        if (monthChosen.current) return;
+        setMonth(getCurrentMonth());
+        setYear(getCurrentYear());
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refetch whenever the selected month/year changes.
+  useEffect(() => {
+    if (month === null || year === null) return;
     fetchTransactions();
-  }, [month, year, filterGroup, initialized]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month, year]);
 
   useEffect(() => {
     const cats = CATEGORIES_BY_GROUP[formGroup];
@@ -149,12 +168,7 @@ function TransactionsContent() {
     fetchTransactions();
   };
 
-  const filtered = filterCategory !== "ALL"
-    ? transactions.filter((t) => t.category === filterCategory)
-    : transactions;
-
-  const total = filtered.reduce((sum, t) => sum + t.amount, 0);
-
+  // Group totals always reflect the whole month, independent of the active filter.
   const groupTotals = GROUP_ORDER.reduce((acc, g) => {
     acc[g] = transactions
       .filter((t) => t.group === g)
@@ -162,12 +176,22 @@ function TransactionsContent() {
     return acc;
   }, {} as Record<string, number>);
 
+  const inGroup = filterGroup !== "ALL"
+    ? transactions.filter((t) => t.group === filterGroup)
+    : transactions;
+
+  const filtered = filterCategory !== "ALL"
+    ? inGroup.filter((t) => t.category === filterCategory)
+    : inGroup;
+
+  const total = filtered.reduce((sum, t) => sum + t.amount, 0);
+
   const activeCats = filterGroup !== "ALL"
     ? CATEGORIES_BY_GROUP[filterGroup] || []
     : [];
 
   const categoryTotals = activeCats.reduce((acc, cat) => {
-    acc[cat] = transactions
+    acc[cat] = inGroup
       .filter((t) => t.category === cat)
       .reduce((sum, t) => sum + t.amount, 0);
     return acc;
@@ -186,7 +210,10 @@ function TransactionsContent() {
         <div className="flex gap-2">
           <select
             value={month ?? getCurrentMonth()}
-            onChange={(e) => setMonth(Number(e.target.value))}
+            onChange={(e) => {
+              monthChosen.current = true;
+              setMonth(Number(e.target.value));
+            }}
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
           >
             {Array.from({ length: 12 }, (_, i) => (
@@ -197,7 +224,10 @@ function TransactionsContent() {
           </select>
           <select
             value={year ?? getCurrentYear()}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={(e) => {
+              monthChosen.current = true;
+              setYear(Number(e.target.value));
+            }}
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
           >
             {Array.from({ length: 5 }, (_, i) => {
@@ -276,11 +306,11 @@ function TransactionsContent() {
                   : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
               )}
             >
-              Toutes ({transactions.length})
+              Toutes ({inGroup.length})
             </button>
             {activeCats.map((cat) => {
               const catAmt = categoryTotals[cat] || 0;
-              const catCount = transactions.filter(t => t.category === cat).length;
+              const catCount = inGroup.filter(t => t.category === cat).length;
               if (catCount === 0) return null;
               return (
                 <button
@@ -449,6 +479,16 @@ function TransactionsContent() {
           <div className="flex h-32 items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
           </div>
+        ) : error ? (
+          <div className="py-8 text-center">
+            <p className="text-sm text-red-600">{error}</p>
+            <button
+              onClick={fetchTransactions}
+              className="mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+            >
+              Réessayer
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">
             Aucune opération ce mois
@@ -464,7 +504,7 @@ function TransactionsContent() {
                   <th className="pb-3 font-medium">Catégorie</th>
                   <th className="pb-3 text-right font-medium">Montant</th>
                   <th className="pb-3 text-right font-medium">
-                    <span className="sr-only">Acciones</span>
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>

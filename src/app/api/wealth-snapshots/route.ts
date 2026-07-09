@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { safe, badRequest } from "@/lib/api";
 
-export async function GET() {
+export const GET = safe(async () => {
   const snapshots = await prisma.wealthSnapshot.findMany({
     orderBy: [{ year: "desc" }, { month: "desc" }],
   });
@@ -17,10 +18,12 @@ export async function GET() {
       butterflyValue: Number(s.butterflyValue),
     }))
   );
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
+
+  if (!body.month || !body.year) return badRequest("month and year required");
 
   const snapshot = await prisma.wealthSnapshot.upsert({
     where: {
@@ -61,4 +64,4 @@ export async function POST(request: NextRequest) {
     },
     { status: 201 }
   );
-}
+});

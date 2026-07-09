@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { safe, toValidDate, badRequest } from "@/lib/api";
 import { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
+export const GET = safe(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const businessLineId = searchParams.get("businessLineId");
   const status = searchParams.get("status");
@@ -24,15 +25,18 @@ export async function GET(request: NextRequest) {
       cost: Number(e.cost),
     }))
   );
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
+
+  const date = toValidDate(body.date);
+  if (date === undefined) return badRequest("Invalid date");
 
   const event = await prisma.event.create({
     data: {
       name: body.name,
-      date: new Date(body.date),
+      date,
       revenue: body.revenue,
       cost: body.cost,
       businessLineId: body.businessLineId,
@@ -50,13 +54,13 @@ export async function POST(request: NextRequest) {
     },
     { status: 201 }
   );
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = safe(async (request: NextRequest) => {
   const body = await request.json();
   const { id } = body;
 
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   const data: Record<string, unknown> = {};
   if (body.name) data.name = body.name;
@@ -78,12 +82,12 @@ export async function PUT(request: NextRequest) {
     revenue: Number(event.revenue),
     cost: Number(event.cost),
   });
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = safe(async (request: NextRequest) => {
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   await prisma.event.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});

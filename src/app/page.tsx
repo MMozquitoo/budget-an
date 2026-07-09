@@ -55,7 +55,7 @@ export default function ChatPage() {
   const isStreaming = status === "streaming";
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-white md:bg-gray-50">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col bg-white md:h-[100dvh] md:bg-gray-50">
       {/* Messages area */}
       <div
         ref={scrollRef}
@@ -157,7 +157,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input bar - fixed at bottom */}
-      <div className="border-t border-gray-100 bg-white px-3 pb-[env(safe-area-inset-bottom,8px)] pt-2 md:px-4 md:pb-4 md:pt-3">
+      <div className="border-t border-gray-100 bg-white px-3 pb-2 pt-2 md:px-4 md:pb-4 md:pt-3">
         {messages.length > 0 && (
           <div className="mb-2 flex justify-center">
             <button

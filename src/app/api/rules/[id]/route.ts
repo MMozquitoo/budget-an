@@ -1,22 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { TransactionGroup, TransactionCategory, MatchType } from "@/generated/prisma/client";
+import { safe, isEnumValue, badRequest } from "@/lib/api";
 
-export async function PUT(
+export const PUT = safe(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   const body = await request.json();
 
-  if (body.group && !(body.group in TransactionGroup)) {
-    return Response.json({ error: "Invalid group" }, { status: 400 });
+  if (body.group && !isEnumValue(body.group, TransactionGroup)) {
+    return badRequest("Invalid group");
   }
-  if (body.category && !(body.category in TransactionCategory)) {
-    return Response.json({ error: "Invalid category" }, { status: 400 });
+  if (body.category && !isEnumValue(body.category, TransactionCategory)) {
+    return badRequest("Invalid category");
   }
-  if (body.matchType && !(body.matchType in MatchType)) {
-    return Response.json({ error: "Invalid matchType" }, { status: 400 });
+  if (body.matchType && !isEnumValue(body.matchType, MatchType)) {
+    return badRequest("Invalid matchType");
   }
 
   const rule = await prisma.classificationRule.update({
@@ -34,4 +35,4 @@ export async function PUT(
   });
 
   return Response.json(rule);
-}
+});

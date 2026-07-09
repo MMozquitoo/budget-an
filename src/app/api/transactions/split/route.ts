@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { TransactionGroup, TransactionCategory } from "@/generated/prisma/client";
+import { safe, isEnumValue, toFiniteNumber, badRequest } from "@/lib/api";
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
   const { parentId, splits } = body as {
     parentId: string;
@@ -15,10 +16,7 @@ export async function POST(request: NextRequest) {
   };
 
   if (!parentId || !splits || splits.length < 2) {
-    return Response.json(
-      { error: "parentId and at least 2 splits required" },
-      { status: 400 }
-    );
+    return badRequest("parentId and at least 2 splits required");
   }
 
   const parent = await prisma.personalTransaction.findUnique({
@@ -29,30 +27,50 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Transaction not found" }, { status: 404 });
   }
 
-  for (const s of splits) {
-    if (!(s.group in TransactionGroup)) {
-      return Response.json({ error: `Invalid group: ${s.group}` }, { status: 400 });
-    }
-    if (!(s.category in TransactionCategory)) {
-      return Response.json({ error: `Invalid category: ${s.category}` }, { status: 400 });
-    }
+  // A parent that was already split (or is itself a split child) must not be
+  // split again — that would append a second set of children and stop them
+  // reconciling to the parent.
+  if (parent.parentId) {
+    return badRequest("Cette transaction est déjà une sous-transaction");
+  }
+  const existingChildren = await prisma.personalTransaction.count({
+    where: { parentId: parent.id },
+  });
+  if (existingChildren > 0) {
+    return badRequest("Cette transaction est déjà divisée");
   }
 
-  const splitTotal = splits.reduce((sum, s) => sum + s.amount, 0);
+  // Validate every split's amount up front so a missing/NaN amount can't slip
+  // past the equality check below (any comparison with NaN is false).
+  const amounts: number[] = [];
+  for (const s of splits) {
+    if (!isEnumValue(s.group, TransactionGroup)) {
+      return badRequest(`Invalid group: ${s.group}`);
+    }
+    if (!isEnumValue(s.category, TransactionCategory)) {
+      return badRequest(`Invalid category: ${s.category}`);
+    }
+    const amt = toFiniteNumber(s.amount);
+    if (amt === undefined) {
+      return badRequest("Chaque sous-transaction doit avoir un montant valide");
+    }
+    amounts.push(amt);
+  }
+
+  const splitTotal = amounts.reduce((sum, a) => sum + a, 0);
   const parentAmount = Number(parent.amount);
   if (Math.abs(splitTotal - parentAmount) > 0.01) {
-    return Response.json(
-      { error: `Split amounts (${splitTotal}) must equal parent amount (${parentAmount})` },
-      { status: 400 }
+    return badRequest(
+      `Split amounts (${splitTotal}) must equal parent amount (${parentAmount})`
     );
   }
 
   const created = await prisma.$transaction(
-    splits.map((s) =>
+    splits.map((s, i) =>
       prisma.personalTransaction.create({
         data: {
           date: parent.date,
-          amount: s.amount,
+          amount: amounts[i],
           group: s.group as TransactionGroup,
           category: s.category as TransactionCategory,
           description: s.description || parent.description,
@@ -68,4 +86,4 @@ export async function POST(request: NextRequest) {
     created.map((t) => ({ ...t, amount: Number(t.amount) })),
     { status: 201 }
   );
-}
+});

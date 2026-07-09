@@ -1,26 +1,27 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { TransactionGroup, TransactionCategory, MatchType } from "@/generated/prisma/client";
+import { safe, isEnumValue, badRequest } from "@/lib/api";
 
-export async function GET() {
+export const GET = safe(async () => {
   const rules = await prisma.classificationRule.findMany({
     orderBy: { priority: "desc" },
   });
 
   return Response.json(rules);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
 
-  if (!(body.group in TransactionGroup)) {
-    return Response.json({ error: "Invalid group" }, { status: 400 });
+  if (!isEnumValue(body.group, TransactionGroup)) {
+    return badRequest("Invalid group");
   }
-  if (!(body.category in TransactionCategory)) {
-    return Response.json({ error: "Invalid category" }, { status: 400 });
+  if (!isEnumValue(body.category, TransactionCategory)) {
+    return badRequest("Invalid category");
   }
-  if (body.matchType && !(body.matchType in MatchType)) {
-    return Response.json({ error: "Invalid matchType" }, { status: 400 });
+  if (body.matchType && !isEnumValue(body.matchType, MatchType)) {
+    return badRequest("Invalid matchType");
   }
 
   const rule = await prisma.classificationRule.create({
@@ -37,12 +38,12 @@ export async function POST(request: NextRequest) {
   });
 
   return Response.json(rule, { status: 201 });
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = safe(async (request: NextRequest) => {
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   await prisma.classificationRule.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});

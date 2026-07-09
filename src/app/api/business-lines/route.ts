@@ -1,15 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { safe } from "@/lib/api";
 
-export async function GET() {
+export const GET = safe(async () => {
   const lines = await prisma.businessLine.findMany({
     orderBy: { name: "asc" },
   });
 
   return Response.json(lines);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
 
   const line = await prisma.businessLine.create({
@@ -20,4 +21,4 @@ export async function POST(request: NextRequest) {
   });
 
   return Response.json(line, { status: 201 });
-}
+});

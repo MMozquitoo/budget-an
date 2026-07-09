@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { TransactionGroup, TransactionCategory } from "@/generated/prisma/client";
+import { safe, isEnumValue, toFiniteNumber, toValidDate, badRequest } from "@/lib/api";
 
-export async function GET(request: NextRequest) {
+export const GET = safe(async (request: NextRequest) => {
   const sp = request.nextUrl.searchParams;
   const month = sp.get("month");
   const year = sp.get("year");
@@ -33,22 +34,30 @@ export async function GET(request: NextRequest) {
   return Response.json(
     transactions.map((t) => ({ ...t, amount: Number(t.amount) }))
   );
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
 
-  if (!(body.group in TransactionGroup)) {
-    return Response.json({ error: "Invalid group" }, { status: 400 });
+  if (!isEnumValue(body.group, TransactionGroup)) {
+    return badRequest("Invalid group");
   }
-  if (!(body.category in TransactionCategory)) {
-    return Response.json({ error: "Invalid category" }, { status: 400 });
+  if (!isEnumValue(body.category, TransactionCategory)) {
+    return badRequest("Invalid category");
+  }
+  const amount = toFiniteNumber(body.amount);
+  if (amount === undefined) {
+    return badRequest("Invalid amount");
+  }
+  const date = toValidDate(body.date);
+  if (date === undefined) {
+    return badRequest("Invalid date");
   }
 
   const transaction = await prisma.personalTransaction.create({
     data: {
-      date: new Date(body.date),
-      amount: body.amount,
+      date,
+      amount,
       group: body.group,
       category: body.category,
       description: body.description,
@@ -61,12 +70,12 @@ export async function POST(request: NextRequest) {
     { ...transaction, amount: Number(transaction.amount) },
     { status: 201 }
   );
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = safe(async (request: NextRequest) => {
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   await prisma.personalTransaction.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});

@@ -3,7 +3,15 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { budgetTools, SYSTEM_PROMPT } from "@/agent/budget-agent";
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  let messages;
+  try {
+    ({ messages } = await req.json());
+  } catch {
+    return Response.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
+  if (!Array.isArray(messages)) {
+    return Response.json({ error: "messages doit être un tableau" }, { status: 400 });
+  }
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),

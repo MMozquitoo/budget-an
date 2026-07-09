@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { safe, badRequest } from "@/lib/api";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serialize(s: { id: string; month: number; year: number; cash: any; savings: any; investments: any; property: any; debt: any; notes: string | null; createdAt: Date }) {
   const cash = Number(s.cash);
   const savings = Number(s.savings);
@@ -22,16 +24,18 @@ function serialize(s: { id: string; month: number; year: number; cash: any; savi
   };
 }
 
-export async function GET() {
+export const GET = safe(async () => {
   const snapshots = await prisma.netWorthSnapshot.findMany({
     orderBy: [{ year: "asc" }, { month: "asc" }],
   });
 
   return Response.json(snapshots.map(serialize));
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
+
+  if (!body.month || !body.year) return badRequest("month and year required");
 
   const snapshot = await prisma.netWorthSnapshot.upsert({
     where: { month_year: { month: body.month, year: body.year } },
@@ -56,12 +60,12 @@ export async function POST(request: NextRequest) {
   });
 
   return Response.json(serialize(snapshot), { status: 201 });
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = safe(async (request: NextRequest) => {
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   await prisma.netWorthSnapshot.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});

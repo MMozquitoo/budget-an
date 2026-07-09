@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { monthRange } from "@/lib/utils";
+import { safe, toFiniteNumber, toValidDate, badRequest } from "@/lib/api";
 import { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
+export const GET = safe(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const month = searchParams.get("month");
   const year = searchParams.get("year");
@@ -10,9 +12,7 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = {};
 
   if (month && year) {
-    const startDate = new Date(Number(year), Number(month) - 1, 1);
-    const endDate = new Date(Number(year), Number(month), 0, 23, 59, 59);
-    where.date = { gte: startDate, lte: endDate };
+    where.date = monthRange(Number(year), Number(month));
   }
 
   if (businessLineId) where.businessLineId = businessLineId;
@@ -29,15 +29,20 @@ export async function GET(request: NextRequest) {
       amount: Number(r.amount),
     }))
   );
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
+
+  const amount = toFiniteNumber(body.amount);
+  if (amount === undefined) return badRequest("Invalid amount");
+  const date = toValidDate(body.date);
+  if (date === undefined) return badRequest("Invalid date");
 
   const revenue = await prisma.revenue.create({
     data: {
-      date: new Date(body.date),
-      amount: body.amount,
+      date,
+      amount,
       description: body.description,
       client: body.client,
       businessLineId: body.businessLineId,
@@ -49,12 +54,12 @@ export async function POST(request: NextRequest) {
     { ...revenue, amount: Number(revenue.amount) },
     { status: 201 }
   );
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = safe(async (request: NextRequest) => {
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
   await prisma.revenue.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});
