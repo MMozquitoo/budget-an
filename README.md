@@ -67,6 +67,44 @@ npm run db:migrate   # prisma migrate dev
 npm run db:studio    # prisma studio
 ```
 
+## Sauvegardes
+
+Une sauvegarde complète part chaque nuit à 03:00 UTC : le cron défini dans
+`vercel.json` appelle `/api/cron/backup`, qui exporte **toutes** les tables en
+JSON vers un Blob store **privé** (`budget-an-backups`) et supprime ce qui
+dépasse 30 jours. Le fichier contient tout l'historique financier en clair — il
+ne doit jamais devenir public, et ce dépôt l'est.
+
+Avant toute réécriture en masse (rejeu des règles, migration, import
+`--replace`), lancer une sauvegarde manuelle :
+
+```bash
+npm run backup          # écrit dans _data/backups/ (gitignoré)
+```
+
+Variables nécessaires en production : `CRON_SECRET` (le cron s'authentifie
+avec) et `BLOB_STORE_ID` (le SDK Blob s'authentifie ensuite via le jeton OIDC
+de Vercel, sans jeton longue durée).
+
+## Base de développement
+
+`.env` et `.env.local` pointent tous les deux sur la production : par défaut,
+un `npm run dev` lit et écrit les vraies données. Pour travailler à côté, créer
+une **branche Neon** — une copie instantanée, sans coût de stockage :
+
+1. Vercel → projet `budget-an` → Storage → `neon-bisque-cushion` → *Open in Neon*
+2. Dans Neon : **Branches → New branch**, à partir de `production`, nommée `dev`
+3. Copier les deux chaînes de connexion de la branche
+4. Dans `.env.local` :
+   ```
+   DATABASE_URL=<chaîne poolée de la branche dev>
+   DIRECT_URL=<chaîne non poolée de la branche dev>
+   ```
+
+`prisma.config.ts` utilise `DIRECT_URL` en priorité pour les migrations : c'est
+ce qui permet de répéter une migration sur la branche avant de la passer en
+production avec `npx prisma migrate deploy`.
+
 ## Importer un relevé bancaire
 
 L'import lit un CSV (séparateur `;`, colonnes `Date`, `Montant`, `Description`,
