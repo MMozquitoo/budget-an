@@ -35,9 +35,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const isApi = request.nextUrl.pathname.startsWith("/api");
       const isAuthApi = request.nextUrl.pathname.startsWith("/api/auth");
       const isLogin = request.nextUrl.pathname === "/login";
+      // Vercel cron requests carry no session — they authenticate with
+      // CRON_SECRET, which each /api/cron route checks for itself.
+      const isCron = request.nextUrl.pathname.startsWith("/api/cron");
 
       if (isAuthApi) return true;
       if (isLogin) return true;
+      if (isCron) return true;
 
       if (!isLoggedIn) {
         if (isApi) return Response.json({ error: "Unauthorized" }, { status: 401 });
