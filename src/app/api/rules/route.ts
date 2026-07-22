@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { TransactionGroup, TransactionCategory, MatchType } from "@/generated/prisma/client";
 import { safe, isEnumValue, badRequest } from "@/lib/api";
+import { isCategoryInGroup, validateRegex } from "@/lib/rules";
 
 export const GET = safe(async () => {
   const rules = await prisma.classificationRule.findMany({
@@ -22,6 +23,20 @@ export const POST = safe(async (request: NextRequest) => {
   }
   if (body.matchType && !isEnumValue(body.matchType, MatchType)) {
     return badRequest("Invalid matchType");
+  }
+  if (!isCategoryInGroup(body.group, body.category)) {
+    return badRequest(
+      `La catégorie ${body.category} n'appartient pas au groupe ${body.group}`
+    );
+  }
+  if (typeof body.matchValue !== "string" || !body.matchValue.trim()) {
+    return badRequest("matchValue requis");
+  }
+  // Rule patterns are evaluated server-side on every imported row — reject the
+  // ones that could stall the request before they reach the database.
+  if (body.matchType === "REGEX") {
+    const check = validateRegex(body.matchValue);
+    if (!check.ok) return badRequest(check.error!);
   }
 
   const rule = await prisma.classificationRule.create({

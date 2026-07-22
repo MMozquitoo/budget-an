@@ -14,7 +14,9 @@
     "db:studio": "npx prisma studio",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "rules:apply": "npx tsx scripts/apply-rules.ts",
+    "rules:seed": "npx tsx scripts/seed-rules.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.2",
