@@ -93,6 +93,39 @@ export function getCurrentYear(): number {
   return new Date().getFullYear();
 }
 
+// Which calendar month a stored instant falls into, read in `timeZone` rather
+// than in the server's zone. Counterpart to monthRange(): use it whenever a row's
+// date has to be bucketed back into a month (trends, "latest month" lookups).
+export function monthPartsInZone(
+  date: Date,
+  timeZone = "Europe/Paris"
+): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const p of parts) if (p.type !== "literal") map[p.type] = p.value;
+  return { year: Number(map.year), month: Number(map.month) };
+}
+
+/** Sortable `YYYY-MM` key for a stored instant, bucketed in `timeZone`. */
+export function monthKeyInZone(date: Date, timeZone = "Europe/Paris"): string {
+  const { year, month } = monthPartsInZone(date, timeZone);
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+/** Step a {year, month} pair by `delta` months (month is 1-indexed). */
+export function shiftMonth(
+  year: number,
+  month: number,
+  delta: number
+): { year: number; month: number } {
+  const total = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(total / 12), month: (((total % 12) + 12) % 12) + 1 };
+}
+
 export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
