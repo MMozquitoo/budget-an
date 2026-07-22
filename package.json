@@ -8,15 +8,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:generate": "npx prisma generate",
-    "db:migrate": "npx prisma migrate dev",
-    "db:seed": "npx tsx prisma/seed.ts",
-    "db:studio": "npx prisma studio",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "import:bank": "npx tsx scripts/import-bank.ts",
     "rules:apply": "npx tsx scripts/apply-rules.ts",
-    "rules:seed": "npx tsx scripts/seed-rules.ts"
+    "rules:seed": "npx tsx scripts/seed-rules.ts",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:studio": "npx prisma studio"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.2",

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import * as fs from "fs";
+import { classify } from "../src/lib/rules.js";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg(process.env.DATABASE_URL!),
@@ -9,9 +10,29 @@ const prisma = new PrismaClient({
 
 const CSV_PATH = process.argv[2];
 const APPLY = process.argv.includes("--apply");
+const REPLACE = process.argv.includes("--replace");
+const FORCE = process.argv.includes("--force");
+const NO_RULES = process.argv.includes("--no-rules");
+
 if (!CSV_PATH) {
-  console.error("Usage: npx tsx scripts/import-bank.ts <path-to-csv> [--apply]");
-  console.error("Without --apply it is a DRY RUN (nothing is written).");
+  console.error("Usage: npx tsx scripts/import-bank.ts <path-to-csv> [--apply] [--no-rules]");
+  console.error("");
+  console.error("  (no flag)   DRY RUN — shows what would change, writes nothing");
+  console.error("  --apply     insert the rows that are not already in the database");
+  console.error("  --no-rules  ignore ClassificationRule, use only the built-in mapping");
+  console.error("  --replace   DESTRUCTIVE: wipe the table first (needs --force too)");
+  console.error("");
+  console.error("The import is incremental by default: existing rows — including any");
+  console.error("manual reclassification, split or note — are never touched.");
+  process.exit(1);
+}
+
+if (REPLACE && !FORCE) {
+  console.error(
+    "--replace deletes every personal transaction, losing all manual\n" +
+    "reclassifications, splits and notes. Re-run with --force if that is\n" +
+    "really what you want."
+  );
   process.exit(1);
 }
 
@@ -126,18 +147,49 @@ function parseDate(dateStr: string): Date {
   return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 12, 0, 0));
 }
 
+/**
+ * Identity of a transaction as the bank reports it. Two rows with the same day,
+ * amount and payee are the same transaction — that is what lets the import run
+ * again over an overlapping export without creating duplicates.
+ */
+function fingerprint(date: Date, amount: number, description: string): string {
+  return [
+    date.toISOString().slice(0, 10),
+    amount.toFixed(2),
+    description.toLowerCase().replace(/\s+/g, " ").trim(),
+  ].join("|");
+}
+
+interface PreparedRow {
+  date: Date;
+  amount: number;
+  group: string;
+  category: string;
+  description: string;
+  notes: string;
+  ruleName?: string;
+}
+
 async function main() {
   const content = fs.readFileSync(CSV_PATH, "utf-8");
   const rows = parseCSV(content);
   console.log(`Parsed ${rows.length} rows from CSV`);
 
-  const data: {
-    date: Date; amount: number; group: string; category: string;
-    description: string; notes: string;
-  }[] = [];
+  // User-defined rules win over the built-in mapping: they are the whole point
+  // of the Règles page, and they encode knowledge the bank's own categories miss.
+  const rules = NO_RULES
+    ? []
+    : await prisma.classificationRule.findMany({
+        where: { active: true },
+        orderBy: { priority: "desc" },
+      });
+  if (rules.length > 0) console.log(`Loaded ${rules.length} active classification rules`);
+
+  const data: PreparedRow[] = [];
   let skippedTransfer = 0;
   let skippedInvalid = 0;
   let skippedUnmapped = 0;
+  let byRule = 0;
 
   for (const row of rows) {
     const cat = (row["Catégorie"] || "").trim();
@@ -150,13 +202,20 @@ async function main() {
     if (!dateStr || isNaN(amount)) { skippedInvalid++; continue; }
     if (isInternalTransfer(sub, description)) { skippedTransfer++; continue; }
 
+    const notes = `${account} | ${cat} > ${sub}`;
     const key = `${cat} > ${sub}`;
-    const mapping = MAPPING[key] || CATEGORY_FALLBACK[cat];
+
+    const matched = classify(rules, { description, notes });
+    const mapping = matched
+      ? ([matched.group, matched.category] as [string, string])
+      : MAPPING[key] || CATEGORY_FALLBACK[cat];
+
     if (!mapping) {
       console.log(`  UNMAPPED: ${key} — ${description} (${amount})`);
       skippedUnmapped++;
       continue;
     }
+    if (matched) byRule++;
 
     let [group, category] = mapping;
     // Sign decides direction; keep the bank category for the nature.
@@ -175,28 +234,111 @@ async function main() {
       group,
       category,
       description,
-      notes: `${account} | ${cat} > ${sub}`,
+      notes,
+      ruleName: matched?.ruleName,
     });
   }
 
   console.log(
-    `\nPrepared ${data.length} rows | skipped: ${skippedTransfer} internal transfers, ` +
-    `${skippedInvalid} invalid, ${skippedUnmapped} unmapped`
+    `\nPrepared ${data.length} rows (${byRule} classified by a rule) | skipped: ` +
+    `${skippedTransfer} internal transfers, ${skippedInvalid} invalid, ${skippedUnmapped} unmapped`
   );
 
-  if (!APPLY) {
-    console.log("\nDRY RUN — re-run with --apply to replace the table. Nothing changed.");
+  if (data.length === 0) {
+    console.log("Nothing to import.");
     return;
   }
 
-  const existing = await prisma.personalTransaction.count();
-  console.log(`\nReplacing ${existing} existing rows atomically…`);
-  const [del, ins] = await prisma.$transaction([
-    prisma.personalTransaction.deleteMany({}),
+  if (REPLACE) {
+    if (!APPLY) {
+      console.log("\nDRY RUN (--replace) — would delete every row and insert these. Nothing changed.");
+      return;
+    }
+    const existing = await prisma.personalTransaction.count();
+    console.log(`\nReplacing ${existing} existing rows atomically…`);
+    const [del, ins] = await prisma.$transaction([
+      prisma.personalTransaction.deleteMany({}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma.personalTransaction.createMany({ data: data as any }),
+    ]);
+    console.log(`Deleted ${del.count}, inserted ${ins.count}.`);
+    return;
+  }
+
+  // ── Incremental path (the default) ──
+  // Compare against what is already stored over the CSV's own date range only,
+  // so re-importing an overlapping export is a no-op instead of a duplication.
+  const dates = data.map((d) => d.date.getTime());
+  const from = new Date(Math.min(...dates));
+  const to = new Date(Math.max(...dates) + 24 * 60 * 60 * 1000);
+
+  const existing = await prisma.personalTransaction.findMany({
+    where: { date: { gte: from, lte: to }, parentId: null },
+    select: { date: true, amount: true, description: true },
+  });
+
+  const existingCounts = new Map<string, number>();
+  for (const e of existing) {
+    const fp = fingerprint(e.date, Number(e.amount), e.description);
+    existingCounts.set(fp, (existingCounts.get(fp) || 0) + 1);
+  }
+
+  // Group the CSV by fingerprint and keep the surplus: two identical coffees on
+  // the same day are two real transactions, so dedup by count, not by presence.
+  const csvGroups = new Map<string, PreparedRow[]>();
+  for (const d of data) {
+    const fp = fingerprint(d.date, d.amount, d.description);
+    const bucket = csvGroups.get(fp);
+    if (bucket) bucket.push(d);
+    else csvGroups.set(fp, [d]);
+  }
+
+  const toInsert: PreparedRow[] = [];
+  let alreadyPresent = 0;
+  for (const [fp, group] of csvGroups) {
+    const have = existingCounts.get(fp) || 0;
+    alreadyPresent += Math.min(have, group.length);
+    toInsert.push(...group.slice(have));
+  }
+
+  console.log(
+    `\nRange ${from.toISOString().slice(0, 10)} → ${to.toISOString().slice(0, 10)}: ` +
+    `${existing.length} rows already stored, ${alreadyPresent} of the CSV rows match them.`
+  );
+  console.log(`${toInsert.length} new rows to insert.`);
+
+  if (toInsert.length > 0) {
+    const preview = toInsert.slice(0, 10);
+    for (const d of preview) {
+      console.log(
+        `  + ${d.date.toISOString().slice(0, 10)} ${d.amount.toFixed(2).padStart(9)} ` +
+        `${d.group}/${d.category} — ${d.description.slice(0, 50)}` +
+        (d.ruleName ? `  [règle: ${d.ruleName}]` : "")
+      );
+    }
+    if (toInsert.length > preview.length) {
+      console.log(`  … and ${toInsert.length - preview.length} more`);
+    }
+  }
+
+  if (!APPLY) {
+    console.log("\nDRY RUN — re-run with --apply to insert them. Nothing changed.");
+    return;
+  }
+
+  if (toInsert.length === 0) {
+    console.log("\nNothing new — database already up to date.");
+    return;
+  }
+
+  const ins = await prisma.personalTransaction.createMany({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma.personalTransaction.createMany({ data: data as any }),
-  ]);
-  console.log(`Deleted ${del.count}, inserted ${ins.count}. Table now has ${await prisma.personalTransaction.count()} rows.`);
+    data: toInsert.map(({ ruleName: _ruleName, ...row }) => row) as any,
+  });
+  console.log(
+    `\nInserted ${ins.count} rows. Table now has ` +
+    `${await prisma.personalTransaction.count()} rows. Nothing was deleted.`
+  );
 }
 
 main()
