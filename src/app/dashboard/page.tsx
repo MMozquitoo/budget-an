@@ -48,6 +48,14 @@ interface SummaryData {
   transactionCount: number;
 }
 
+/** One month of /api/transactions/trends. */
+interface MonthTrend {
+  year: number;
+  month: number;
+  byGroup: Record<string, number>;
+  byCategory: Record<string, number>;
+}
+
 const GROUP_ICONS: Record<string, typeof Wallet> = {
   INCOME: DollarSign,
   FIXED_EXPENSE: Wallet,
@@ -79,7 +87,7 @@ function deltaIcon(current: number, previous: number) {
 export default function Dashboard() {
   const router = useRouter();
   const [data, setData] = useState<SummaryData | null>(null);
-  const [trends, setTrends] = useState<any[] | null>(null);
+  const [trends, setTrends] = useState<MonthTrend[] | null>(null);
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);

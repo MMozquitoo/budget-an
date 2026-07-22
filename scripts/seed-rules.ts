@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
+import type { TransactionGroup, TransactionCategory, MatchType } from "../src/generated/prisma/enums.js";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg(process.env.DATABASE_URL!),
@@ -51,10 +52,10 @@ async function main() {
         name: r.name,
         priority: RULES.length - i,
         matchField: "description",
-        matchType: (r as any).matchType || "CONTAINS",
+        matchType: ("matchType" in r ? (r.matchType as MatchType) : "CONTAINS"),
         matchValue: r.matchValue,
-        group: r.group as any,
-        category: r.category as any,
+        group: r.group as TransactionGroup,
+        category: r.category as TransactionCategory,
         active: true,
       },
     });

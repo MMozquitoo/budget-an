@@ -31,16 +31,31 @@ const GROUP_CHART_COLORS: Record<string, string> = {
   UNEXPECTED: "#f97316",
 };
 
-function CustomTooltip({ active, payload, label }: any) {
+/** The shape recharts hands a custom tooltip. */
+interface TooltipEntry {
+  name?: string | number;
+  value?: number;
+  color?: string;
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: string | number;
+}) {
   if (!active || !payload) return null;
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg text-sm">
       <p className="font-medium text-gray-900 mb-1">{label}</p>
-      {payload.map((entry: any) => (
-        <div key={entry.name} className="flex items-center gap-2">
+      {payload.map((entry) => (
+        <div key={String(entry.name)} className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-gray-500">{entry.name}:</span>
-          <span className="font-medium">{formatCurrency(entry.value)}</span>
+          <span className="font-medium">{formatCurrency(Number(entry.value ?? 0))}</span>
         </div>
       ))}
     </div>
@@ -74,7 +89,7 @@ export function GroupTrendChart({ data }: { data: MonthData[] }) {
   const groups = ["FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED"];
 
   const chartData = data.map((d) => {
-    const point: Record<string, any> = {
+    const point: Record<string, string | number> = {
       name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
     };
     for (const g of groups) {
@@ -113,7 +128,7 @@ export function CategoryTrendChart({ data, categories, labels }: {
   const colors = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#f97316", "#ec4899", "#14b8a6", "#3b82f6", "#84cc16"];
 
   const chartData = data.map((d) => {
-    const point: Record<string, any> = {
+    const point: Record<string, string | number> = {
       name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
     };
     for (const cat of categories) {

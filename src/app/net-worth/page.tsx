@@ -32,7 +32,24 @@ const MONTH_NAMES = [
   "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
 ];
 
-function CustomTooltip({ active, payload, label }: any) {
+interface ChartPoint {
+  cash: number;
+  savings: number;
+  investments: number;
+  property: number;
+  debt: number;
+  total: number;
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: ChartPoint }>;
+  label?: string | number;
+}) {
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (

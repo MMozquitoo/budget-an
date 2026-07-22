@@ -127,7 +127,7 @@ export default function RulesPage() {
             Règles de classification
           </h1>
           <p className="text-sm text-gray-500">
-            Catégorisation automatique à l'import
+            Catégorisation automatique à l&apos;import
           </p>
         </div>
         <button
@@ -244,7 +244,7 @@ export default function RulesPage() {
             Aucune règle de classification
           </h3>
           <p className="mt-2 text-sm text-gray-400">
-            Crée des règles pour classifier automatiquement tes transactions lors de l'import bancaire.
+            Crée des règles pour classifier automatiquement tes transactions lors de l&apos;import bancaire.
           </p>
         </div>
       ) : (

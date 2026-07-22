@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
+import type { TransactionGroup, TransactionCategory } from "../src/generated/prisma/enums.js";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg(process.env.DATABASE_URL!),
@@ -48,8 +49,8 @@ async function main() {
       data: {
         date: e.date,
         amount: e.amount,
-        group: group as any,
-        category: category as any,
+        group: group as TransactionGroup,
+        category: category as TransactionCategory,
         description: e.description,
         notes: `Migrado de: ${e.category}`,
         createdAt: e.createdAt,
@@ -69,8 +70,8 @@ async function main() {
       data: {
         date: i.date,
         amount: i.amount,
-        group: "INCOME" as any,
-        category: category as any,
+        group: "INCOME" as TransactionGroup,
+        category: category as TransactionCategory,
         description: i.description || i.source,
         notes: `Migrado de: ${i.source}`,
         createdAt: i.createdAt,

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TrendsChart, SummaryChart, NetWorthChart } from "@/components/ChatCharts";
+import type { TrendPoint, SummaryToolOutput, NetWorthPoint } from "@/components/ChatCharts";
 import DOMPurify from "dompurify";
 
 const SUGGESTIONS = [
@@ -121,7 +122,13 @@ export default function ChatPage() {
                           );
                         }
                         if (part.type.startsWith("tool-")) {
-                          const p = part as { type: string; toolCallId: string; toolName?: string; state?: string; output?: any };
+                          const p = part as {
+                            type: string;
+                            toolCallId: string;
+                            toolName?: string;
+                            state?: string;
+                            output?: unknown;
+                          };
                           const toolName = p.toolName || part.type.replace("tool-", "");
                           if (p.state === "output-available" && p.output) {
                             return renderToolChart(toolName, p.output, i);
@@ -194,15 +201,20 @@ export default function ChatPage() {
   );
 }
 
-function renderToolChart(toolName: string, output: any, key: number) {
+function renderToolChart(toolName: string, output: unknown, key: number) {
   if (toolName === "getTrends" && Array.isArray(output) && output.length >= 2) {
-    return <TrendsChart key={key} data={output} />;
+    return <TrendsChart key={key} data={output as TrendPoint[]} />;
   }
-  if (toolName === "getSummary" && output?.byGroup) {
-    return <SummaryChart key={key} data={output} />;
+  if (
+    toolName === "getSummary" &&
+    output !== null &&
+    typeof output === "object" &&
+    "byGroup" in output
+  ) {
+    return <SummaryChart key={key} data={output as SummaryToolOutput} />;
   }
   if (toolName === "getNetWorth" && Array.isArray(output) && output.length >= 2) {
-    return <NetWorthChart key={key} data={output} />;
+    return <NetWorthChart key={key} data={output as NetWorthPoint[]} />;
   }
   return null;
 }

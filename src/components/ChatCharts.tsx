@@ -25,15 +25,29 @@ function formatMonth(key: string) {
   return `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`;
 }
 
-function MiniTooltip({ active, payload, label }: any) {
+/** The shape recharts hands a custom tooltip. */
+interface TooltipPayloadItem {
+  dataKey?: string | number;
+  name?: string | number;
+  value?: number;
+  color?: string;
+}
+
+interface MiniTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string | number;
+}
+
+function MiniTooltip({ active, payload, label }: MiniTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg text-xs">
       <p className="font-semibold text-gray-700 mb-1">{label}</p>
-      {payload.map((p: any) => (
-        <div key={p.dataKey} className="flex justify-between gap-4">
+      {payload.map((p) => (
+        <div key={String(p.dataKey)} className="flex justify-between gap-4">
           <span style={{ color: p.color }}>{p.name}</span>
-          <span className="font-medium">{formatCurrency(p.value)}</span>
+          <span className="font-medium">{formatCurrency(Number(p.value ?? 0))}</span>
         </div>
       ))}
     </div>
@@ -42,7 +56,15 @@ function MiniTooltip({ active, payload, label }: any) {
 
 const PIE_COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"];
 
-export function TrendsChart({ data }: { data: any[] }) {
+/** Output of the agent's getTrends tool. */
+export interface TrendPoint {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+}
+
+export function TrendsChart({ data }: { data: TrendPoint[] }) {
   if (!Array.isArray(data) || data.length < 2) return null;
   const chartData = data.map((d) => ({
     name: formatMonth(d.month),
@@ -67,11 +89,16 @@ export function TrendsChart({ data }: { data: any[] }) {
   );
 }
 
-export function SummaryChart({ data }: { data: any }) {
+/** Output of the agent's getSummary tool. */
+export interface SummaryToolOutput {
+  byGroup?: Array<{ group: string; label: string; total: number }>;
+}
+
+export function SummaryChart({ data }: { data: SummaryToolOutput }) {
   if (!data?.byGroup || !Array.isArray(data.byGroup)) return null;
   const pieData = data.byGroup
-    .filter((g: any) => g.group !== "INCOME" && g.total > 0)
-    .map((g: any) => ({ name: g.label, value: Math.round(g.total) }));
+    .filter((g) => g.group !== "INCOME" && g.total > 0)
+    .map((g) => ({ name: g.label, value: Math.round(g.total) }));
 
   if (pieData.length === 0) return null;
 
@@ -87,20 +114,28 @@ export function SummaryChart({ data }: { data: any }) {
             outerRadius={80}
             paddingAngle={2}
             dataKey="value"
-            label={({ name, percent }: any) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+            label={({ name, percent }: { name?: string; percent?: number }) =>
+              `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
+            }
           >
-            {pieData.map((_: any, i: number) => (
+            {pieData.map((_, i) => (
               <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: any) => formatCurrency(Number(v))} />
+          <Tooltip formatter={(v) => formatCurrency(Number(v))} />
         </PieChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-export function NetWorthChart({ data }: { data: any[] }) {
+/** Output of the agent's getNetWorth tool. */
+export interface NetWorthPoint {
+  period: string;
+  total: number;
+}
+
+export function NetWorthChart({ data }: { data: NetWorthPoint[] }) {
   if (!Array.isArray(data) || data.length < 2) return null;
   const chartData = data.map((d) => ({
     name: formatMonth(d.period),

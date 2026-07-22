@@ -1,6 +1,16 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
+import type { TransactionGroup, TransactionCategory } from "../src/generated/prisma/enums.js";
+
+/** Row shape of the raw month/group summary query below. */
+interface SummaryRow {
+  year: number;
+  month: number;
+  group: string;
+  count: number;
+  total: string | number;
+}
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg(process.env.DATABASE_URL!),
@@ -167,8 +177,8 @@ async function main() {
           await prisma.personalTransaction.update({
             where: { id: t.id },
             data: {
-              group: newGroup as any,
-              category: newCategory as any,
+              group: newGroup as TransactionGroup,
+              category: newCategory as TransactionCategory,
             },
           });
           reclassified++;
@@ -202,7 +212,7 @@ async function main() {
     FROM personal_transactions
     GROUP BY year, month, "group"
     ORDER BY year, month, "group"
-  `) as any[];
+  `) as SummaryRow[];
 
   console.log("\n=== RESUMEN LIMPIO ===");
   let currentMonth = "";
@@ -210,8 +220,8 @@ async function main() {
     const key = `${r.year}-${String(r.month).padStart(2, "0")}`;
     if (key !== currentMonth) {
       currentMonth = key;
-      const income = summary.filter(s => `${s.year}-${String(s.month).padStart(2, '0')}` === key && s.group === 'INCOME').reduce((a: number, s: any) => a + Number(s.total), 0);
-      const expenses = summary.filter(s => `${s.year}-${String(s.month).padStart(2, '0')}` === key && ['FIXED_EXPENSE', 'VARIABLE_EXPENSE', 'UNEXPECTED'].includes(s.group)).reduce((a: number, s: any) => a + Number(s.total), 0);
+      const income = summary.filter(s => `${s.year}-${String(s.month).padStart(2, '0')}` === key && s.group === 'INCOME').reduce((a: number, s: SummaryRow) => a + Number(s.total), 0);
+      const expenses = summary.filter(s => `${s.year}-${String(s.month).padStart(2, '0')}` === key && ['FIXED_EXPENSE', 'VARIABLE_EXPENSE', 'UNEXPECTED'].includes(s.group)).reduce((a: number, s: SummaryRow) => a + Number(s.total), 0);
       console.log(`\n${key} (Balance: ${(income - expenses).toFixed(0)}€):`);
     }
     console.log(`  ${r.group.padEnd(20)} ${String(r.count).padStart(3)} txns  ${Number(r.total).toFixed(0).padStart(8)}€`);
