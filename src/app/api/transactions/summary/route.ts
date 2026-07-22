@@ -1,76 +1,58 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { safe } from "@/lib/api";
+import { aggregate } from "@/lib/summary";
+import {
+  monthRange,
+  shiftMonth,
+  getCurrentMonth,
+  getCurrentYear,
+} from "@/lib/utils";
 
-export async function GET(request: NextRequest) {
+export const GET = safe(async (request: NextRequest) => {
   const sp = request.nextUrl.searchParams;
-  const month = Number(sp.get("month") || new Date().getMonth() + 1);
-  const year = Number(sp.get("year") || new Date().getFullYear());
+  const month = Number(sp.get("month") || getCurrentMonth());
+  const year = Number(sp.get("year") || getCurrentYear());
 
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
-
-  const transactions = await prisma.personalTransaction.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
-  });
-
-  const byGroup: Record<string, number> = {};
-  const byCategory: Record<string, number> = {};
-
-  for (const t of transactions) {
-    const amt = Number(t.amount);
-    byGroup[t.group] = (byGroup[t.group] || 0) + amt;
-    byCategory[t.category] = (byCategory[t.category] || 0) + amt;
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return Response.json({ error: "Mois invalide" }, { status: 400 });
+  }
+  if (!Number.isInteger(year) || year < 1970 || year > 3000) {
+    return Response.json({ error: "Année invalide" }, { status: 400 });
   }
 
-  const totalIncome = byGroup["INCOME"] || 0;
-  const totalFixedExpense = byGroup["FIXED_EXPENSE"] || 0;
-  const totalVariableExpense = byGroup["VARIABLE_EXPENSE"] || 0;
-  const totalSavings = byGroup["SAVINGS"] || 0;
-  const totalDebt = byGroup["DEBT"] || 0;
-  const totalUnexpected = byGroup["UNEXPECTED"] || 0;
+  const prev = shiftMonth(year, month, -1);
 
-  const totalExpenses = totalFixedExpense + totalVariableExpense + totalUnexpected;
-  const totalOutflow = totalExpenses + totalSavings + totalDebt;
-  const balance = totalIncome - totalOutflow;
-  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
-  const expenseRate = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
+  // parentId: null excludes split children. A split keeps its parent row and
+  // adds children summing to it, so counting both double-counts that
+  // transaction — which is what this route did while trends and the chat agent
+  // did not, giving three different totals for the same month.
+  const [current, previous] = await Promise.all([
+    prisma.personalTransaction.findMany({
+      where: { date: monthRange(year, month), parentId: null },
+      select: { amount: true, group: true, category: true },
+    }),
+    prisma.personalTransaction.findMany({
+      where: { date: monthRange(prev.year, prev.month), parentId: null },
+      select: { amount: true, group: true, category: true },
+    }),
+  ]);
 
-  // Previous month for comparison
-  const prevMonth = month === 1 ? 12 : month - 1;
-  const prevYear = month === 1 ? year - 1 : year;
-  const prevStart = new Date(prevYear, prevMonth - 1, 1);
-  const prevEnd = new Date(prevYear, prevMonth, 0, 23, 59, 59);
+  const toLite = (rows: typeof current) =>
+    rows.map((t) => ({
+      amount: Number(t.amount),
+      group: t.group as string,
+      category: t.category as string,
+    }));
 
-  const prevTransactions = await prisma.personalTransaction.findMany({
-    where: { date: { gte: prevStart, lte: prevEnd } },
-  });
-
-  let prevIncome = 0;
-  let prevExpenses = 0;
-  for (const t of prevTransactions) {
-    const amt = Number(t.amount);
-    if (t.group === "INCOME") prevIncome += amt;
-    if (["FIXED_EXPENSE", "VARIABLE_EXPENSE", "UNEXPECTED"].includes(t.group)) prevExpenses += amt;
-  }
+  const totals = aggregate(toLite(current));
+  const prevTotals = aggregate(toLite(previous));
 
   return Response.json({
     month,
     year,
-    totalIncome,
-    totalFixedExpense,
-    totalVariableExpense,
-    totalSavings,
-    totalDebt,
-    totalUnexpected,
-    totalExpenses,
-    totalOutflow,
-    balance,
-    savingsRate,
-    expenseRate,
-    prevIncome,
-    prevExpenses,
-    byGroup,
-    byCategory,
-    transactionCount: transactions.length,
+    ...totals,
+    prevIncome: prevTotals.totalIncome,
+    prevExpenses: prevTotals.totalExpenses,
   });
-}
+});

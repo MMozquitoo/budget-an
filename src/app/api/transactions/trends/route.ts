@@ -1,9 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { safe } from "@/lib/api";
+import { monthPartsInZone, monthKeyInZone, monthRange, shiftMonth } from "@/lib/utils";
 
-export async function GET(request: NextRequest) {
+interface Bucket {
+  year: number;
+  month: number;
+  byGroup: Record<string, number>;
+  byCategory: Record<string, number>;
+}
+
+export const GET = safe(async (request: NextRequest) => {
   const sp = request.nextUrl.searchParams;
-  const numMonths = Number(sp.get("months") || 6);
+  const requested = Number(sp.get("months") || 6);
+  const numMonths = Number.isInteger(requested)
+    ? Math.min(Math.max(requested, 1), 60)
+    : 6;
   const groupFilter = sp.get("group") || undefined;
 
   const latest = await prisma.personalTransaction.findFirst({
@@ -13,15 +25,16 @@ export async function GET(request: NextRequest) {
 
   if (!latest) return Response.json([]);
 
-  const end = new Date(latest.date);
-  const endYear = end.getFullYear();
-  const endMonth = end.getMonth(); // 0-indexed
-
-  const startDate = new Date(endYear, endMonth - numMonths + 1, 1);
-  const endDate = new Date(endYear, endMonth + 1, 0, 23, 59, 59);
+  // Anchor the window on the month of the latest transaction, read in Paris —
+  // bucketing with the server's local getMonth() shifted 1st-of-month rows.
+  const end = monthPartsInZone(latest.date);
+  const start = shiftMonth(end.year, end.month, -(numMonths - 1));
 
   const where: Record<string, unknown> = {
-    date: { gte: startDate, lte: endDate },
+    date: {
+      gte: monthRange(start.year, start.month).gte,
+      lt: monthRange(end.year, end.month).lt,
+    },
     parentId: null, // exclude split children from totals
   };
   if (groupFilter) {
@@ -31,32 +44,30 @@ export async function GET(request: NextRequest) {
   const transactions = await prisma.personalTransaction.findMany({
     where,
     orderBy: { date: "asc" },
+    select: { date: true, amount: true, group: true, category: true },
   });
 
-  // Build monthly buckets
-  const buckets: Map<
-    string,
-    { year: number; month: number; byGroup: Record<string, number>; byCategory: Record<string, number> }
-  > = new Map();
-
-  // Pre-fill all months so there are no gaps
+  // Pre-fill every month so the chart has no gaps.
+  const buckets = new Map<string, Bucket>();
   for (let i = 0; i < numMonths; i++) {
-    const d = new Date(endYear, endMonth - numMonths + 1 + i, 1);
-    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-    buckets.set(key, { year: d.getFullYear(), month: d.getMonth() + 1, byGroup: {}, byCategory: {} });
+    const { year, month } = shiftMonth(start.year, start.month, i);
+    buckets.set(`${year}-${String(month).padStart(2, "0")}`, {
+      year,
+      month,
+      byGroup: {},
+      byCategory: {},
+    });
   }
 
   for (const t of transactions) {
-    const amt = Number(t.amount);
-    const d = new Date(t.date);
-    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-
+    const key = monthKeyInZone(t.date);
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { year: d.getFullYear(), month: d.getMonth() + 1, byGroup: {}, byCategory: {} };
+      const [y, m] = key.split("-");
+      bucket = { year: Number(y), month: Number(m), byGroup: {}, byCategory: {} };
       buckets.set(key, bucket);
     }
-
+    const amt = Number(t.amount);
     bucket.byGroup[t.group] = (bucket.byGroup[t.group] || 0) + amt;
     bucket.byCategory[t.category] = (bucket.byCategory[t.category] || 0) + amt;
   }
@@ -66,4 +77,4 @@ export async function GET(request: NextRequest) {
   );
 
   return Response.json(months);
-}
+});
