@@ -68,6 +68,10 @@ export const POST = safe(async (request: NextRequest) => {
   let group = body.group;
   let category = body.category;
 
+  // Someone filled in the group and category on the form: that is a human
+  // decision, and it outranks any rule that runs over this row later.
+  const classifiedByHuman = group !== undefined && category !== undefined;
+
   // No classification supplied → let the rules decide, using the same engine as
   // the import, so a quick manual entry lands where an imported row would.
   if (group === undefined || category === undefined) {
@@ -106,6 +110,7 @@ export const POST = safe(async (request: NextRequest) => {
       description,
       notes: body.notes || null,
       recurring: body.recurring || false,
+      manuallyClassified: classifiedByHuman,
     },
   });
 

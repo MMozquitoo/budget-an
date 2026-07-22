@@ -77,6 +77,7 @@ export const POST = safe(async (request: NextRequest) => {
           notes: parent.notes,
           recurring: parent.recurring,
           parentId: parent.id,
+          manuallyClassified: true,
         },
       })
     )

@@ -41,7 +41,9 @@ async function main() {
   const transactions = await prisma.personalTransaction.findMany({
     // Split children inherit their parent's classification by construction;
     // reclassifying them independently would break the reconciliation.
-    where: { parentId: null, splits: { none: {} } },
+    // manuallyClassified rows were corrected by a human and outrank any rule —
+    // that is the whole point of the flag.
+    where: { parentId: null, splits: { none: {} }, manuallyClassified: false },
     select: {
       id: true,
       date: true,

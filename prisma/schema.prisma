@@ -59,6 +59,10 @@ model PersonalTransaction {
   description String
   notes       String?
   recurring   Boolean             @default(false)
+  /// Set when a human chose this classification — in the chat, in the form, or
+  /// by splitting. The rule engine and the import must never overwrite it, so a
+  /// correction made by hand survives every later re-import and rule change.
+  manuallyClassified Boolean      @default(false)
   parentId    String?
   parent      PersonalTransaction?  @relation("TransactionSplits", fields: [parentId], references: [id])
   splits      PersonalTransaction[] @relation("TransactionSplits")

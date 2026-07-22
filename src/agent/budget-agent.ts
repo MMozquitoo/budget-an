@@ -165,7 +165,13 @@ export const budgetTools = {
       }
       const updated = await prisma.personalTransaction.update({
         where: { id: transactionId },
-        data: { group: group as TransactionGroup, category: category as TransactionCategory },
+        // Adrien asked for this classification in the conversation, so it is a
+        // human decision: pin it so no rule or re-import can undo it later.
+        data: {
+          group: group as TransactionGroup,
+          category: category as TransactionCategory,
+          manuallyClassified: true,
+        },
       });
       return { success: true, id: updated.id, description: updated.description,
         newGroup: GROUP_LABELS[updated.group], newCategory: CATEGORY_LABELS[updated.category] };
