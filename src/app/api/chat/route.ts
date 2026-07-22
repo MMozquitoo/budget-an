@@ -1,6 +1,6 @@
 import { streamText, convertToModelMessages, isStepCount } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { budgetTools, SYSTEM_PROMPT } from "@/agent/budget-agent";
+import { budgetTools, buildSystemPrompt } from "@/agent/budget-agent";
 
 export async function POST(req: Request) {
   let messages;
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(),
     messages: await convertToModelMessages(messages),
     tools: budgetTools,
     stopWhen: isStepCount(5),
