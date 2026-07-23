@@ -14,6 +14,7 @@ import {
 } from "@/lib/utils";
 import { aggregate, topCategories } from "@/lib/summary";
 import { detectRecurring, summariseRecurring } from "@/lib/recurring";
+import { buildReport, isBudgetable } from "@/lib/budgets";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -148,6 +149,88 @@ export const budgetTools = {
       }
       return Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b))
         .map(([month, data]) => ({ month, ...data, balance: data.income - data.expenses - data.savings }));
+    },
+  }),
+
+  getBudgetStatus: tool({
+    description:
+      "État des budgets par catégorie pour un mois : budget vs dépensé, dépassements, catégories sans budget. Plafond pour dépenses/dettes, objectif pour l'épargne.",
+    inputSchema: z.object({
+      month: z.number().describe("Mois (1-12)"),
+      year: z.number().describe("Année"),
+    }),
+    execute: async ({ month, year }) => {
+      const [budgets, transactions] = await Promise.all([
+        prisma.budget.findMany({ where: { month, year } }),
+        prisma.personalTransaction.findMany({
+          where: { date: monthRange(year, month), parentId: null },
+          select: { amount: true, group: true, category: true },
+        }),
+      ]);
+      if (budgets.length === 0) {
+        return {
+          month, year, hasBudgets: false,
+          message: "Aucun budget défini pour ce mois. Utilise setBudget, ou copie le mois précédent.",
+        };
+      }
+      const { byCategory } = aggregate(
+        transactions.map((t) => ({
+          amount: Number(t.amount),
+          group: t.group as string,
+          category: t.category as string,
+        }))
+      );
+      const report = buildReport(
+        budgets.map((b) => ({ category: b.category as string, amount: Number(b.amount) })),
+        byCategory
+      );
+      return {
+        month, year, hasBudgets: true,
+        totalBudget: report.totalBudget,
+        totalActual: report.totalActual,
+        unbudgetedSpend: report.unbudgetedSpend,
+        overCount: report.overCount,
+        lines: report.lines.map((l) => ({
+          category: l.category,
+          label: CATEGORY_LABELS[l.category],
+          group: GROUP_LABELS[l.group],
+          direction: l.direction,
+          budget: l.budget,
+          actual: l.actual,
+          remaining: l.remaining,
+          pct: Math.round(l.pct),
+          health: l.health,
+        })),
+      };
+    },
+  }),
+
+  setBudget: tool({
+    description:
+      "Définir ou mettre à jour le budget d'une catégorie pour un mois (plafond pour dépenses/dettes, objectif pour l'épargne).",
+    inputSchema: z.object({
+      month: z.number().describe("Mois (1-12)"),
+      year: z.number().describe("Année"),
+      category: categoryEnum.describe("Catégorie à budgéter"),
+      amount: z.number().describe("Montant du budget en euros (positif)"),
+    }),
+    execute: async ({ month, year, category, amount }) => {
+      if (!isBudgetable(category)) {
+        return { error: `La catégorie ${category} ne peut pas avoir de budget (les revenus sont exclus).` };
+      }
+      if (!(amount >= 0)) {
+        return { error: "Le montant doit être positif." };
+      }
+      const saved = await prisma.budget.upsert({
+        where: { month_year_category: { month, year, category: category as TransactionCategory } },
+        update: { amount },
+        create: { month, year, category: category as TransactionCategory, amount },
+      });
+      return {
+        success: true, month, year, category,
+        label: CATEGORY_LABELS[category],
+        amount: Number(saved.amount),
+      };
     },
   }),
 

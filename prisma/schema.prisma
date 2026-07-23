@@ -124,6 +124,24 @@ model NetWorthSnapshot {
   @@map("net_worth_snapshots")
 }
 
+// ──────────────────────────────────────────────
+// BUDGETS — Monthly ceiling (expenses/debt) or target (savings) per category
+// ──────────────────────────────────────────────
+
+model Budget {
+  id        String              @id @default(cuid())
+  month     Int
+  year      Int
+  category  TransactionCategory
+  amount    Decimal             @db.Decimal(12, 2)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([month, year, category])
+  @@index([year, month])
+  @@map("budgets")
+}
+
 enum TransactionGroup {
   INCOME
   FIXED_EXPENSE
