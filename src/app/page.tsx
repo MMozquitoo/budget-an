@@ -18,7 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import { TrendsChart, SummaryChart, NetWorthChart } from "@/components/ChatCharts";
 import type { TrendPoint, SummaryToolOutput, NetWorthPoint } from "@/components/ChatCharts";
-import DOMPurify from "dompurify";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const SUGGESTIONS = [
   { icon: Receipt, text: "Résumé du mois", color: "text-blue-600 bg-blue-50" },
@@ -258,10 +259,11 @@ export default function ChatPage() {
                             <div
                               key={i}
                               className="prose prose-sm max-w-none prose-p:my-1.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-table:my-2 prose-pre:my-2 prose-hr:my-3 prose-strong:text-gray-900 prose-td:px-3 prose-td:py-1.5 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:font-semibold prose-table:text-sm"
-                              dangerouslySetInnerHTML={{
-                                __html: DOMPurify.sanitize(formatMarkdown(part.text)),
-                              }}
-                            />
+                            >
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {part.text}
+                              </ReactMarkdown>
+                            </div>
                           );
                         }
                         if (part.type.startsWith("tool-")) {
@@ -381,60 +383,3 @@ function toolLabel(name: string): string {
   return labels[name] || "Traitement...";
 }
 
-function formatMarkdown(text: string): string {
-  let html = text;
-
-  // Tables
-  const tableRegex = /(\|.+\|[\r\n]+\|[\s:|-]+\|[\r\n]+((\|.+\|[\r\n]*)+))/g;
-  html = html.replace(tableRegex, (match) => {
-    const rows = match.trim().split("\n").filter((r) => r.trim());
-    if (rows.length < 2) return match;
-    const headers = rows[0].split("|").filter((c) => c.trim()).map((c) => c.trim());
-    const dataRows = rows.slice(2);
-    let table = '<table class="w-full border-collapse rounded-lg overflow-hidden text-sm"><thead><tr>';
-    headers.forEach((h) => {
-      table += `<th class="bg-gray-50 border-b border-gray-200 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">${h}</th>`;
-    });
-    table += "</tr></thead><tbody>";
-    dataRows.forEach((row, i) => {
-      const cells = row.split("|").filter((c) => c.trim()).map((c) => c.trim());
-      const bg = i % 2 === 0 ? "" : "bg-gray-50/50";
-      table += `<tr class="${bg}">`;
-      cells.forEach((c) => {
-        const formatted = c
-          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\*(.*?)\*/g, "<em>$1</em>");
-        table += `<td class="border-b border-gray-100 px-3 py-2 text-gray-700">${formatted}</td>`;
-      });
-      table += "</tr>";
-    });
-    table += "</tbody></table>";
-    return table;
-  });
-
-  // Headers
-  html = html.replace(/^### (.*$)/gm, '<h3 class="text-base font-semibold text-gray-900 mt-3 mb-1">$1</h3>');
-  html = html.replace(/^## (.*$)/gm, '<h2 class="text-lg font-semibold text-gray-900 mt-4 mb-1">$1</h2>');
-  html = html.replace(/^# (.*$)/gm, '<h1 class="text-xl font-bold text-gray-900 mt-4 mb-2">$1</h1>');
-
-  // Horizontal rules
-  html = html.replace(/^---$/gm, '<hr class="border-gray-200 my-3" />');
-
-  // Bold / italic / code
-  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
-  html = html.replace(/`(.*?)`/g, '<code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-indigo-700">$1</code>');
-
-  // Lists
-  html = html.replace(/^- (.*$)/gm, '<li class="ml-4 list-disc text-gray-700">$1</li>');
-  html = html.replace(/^(\d+)\. (.*$)/gm, '<li class="ml-4 list-decimal text-gray-700">$2</li>');
-
-  // Blockquotes
-  html = html.replace(/^> (.*$)/gm, '<blockquote class="border-l-3 border-indigo-300 bg-indigo-50/50 pl-3 py-1 text-sm text-gray-600 rounded-r-lg my-1.5">$1</blockquote>');
-
-  // Paragraphs
-  html = html.replace(/\n{2,}/g, '</p><p class="my-1.5">');
-  html = html.replace(/\n/g, "<br />");
-
-  return html;
-}
