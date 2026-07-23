@@ -13,6 +13,7 @@ import {
   Sparkles,
   Wallet,
   Lightbulb,
+  Upload,
   LogOut,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -26,6 +27,7 @@ const navigation = [
   { name: "Calendrier", href: "/calendar", icon: CalendarDays },
   { name: "Abonnements", href: "/subscriptions", icon: Repeat },
   { name: "Patrimoine", href: "/net-worth", icon: TrendingUp },
+  { name: "Import", href: "/import", icon: Upload },
   { name: "Règles", href: "/rules", icon: Settings },
 ];
 
