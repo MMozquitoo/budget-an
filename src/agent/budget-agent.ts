@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { TransactionGroup, TransactionCategory } from "@/generated/prisma/client";
+import { TransactionGroup, TransactionCategory, MatchType } from "@/generated/prisma/client";
 import {
   GROUP_LABELS,
   CATEGORY_LABELS,
@@ -19,6 +19,7 @@ import { buildReport, isBudgetable, suggestFromTransactions } from "@/lib/budget
 import { computeInsights } from "@/lib/insights-data";
 import { accountBreakdown } from "@/lib/accounts";
 import { suggestRules } from "@/lib/autorules";
+import { isCategoryInGroup, validateRegex } from "@/lib/rules";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -401,6 +402,145 @@ export const budgetTools = {
           count: s.count,
         })),
       };
+    },
+  }),
+
+  createTransaction: tool({
+    description:
+      "Créer une transaction manuelle (revenu ou dépense). Elle est marquée comme classée à la main.",
+    inputSchema: z.object({
+      date: z.string().describe("Date ISO (YYYY-MM-DD)"),
+      amount: z.number().describe("Montant en euros (positif)"),
+      group: groupEnum.describe("Groupe"),
+      category: categoryEnum.describe("Catégorie"),
+      description: z.string().describe("Libellé"),
+      notes: z.string().optional(),
+      recurring: z.boolean().optional().default(false),
+    }),
+    execute: async ({ date, amount, group, category, description, notes, recurring }) => {
+      if (!isCategoryInGroup(group, category)) {
+        return { error: `La catégorie ${category} n'appartient pas au groupe ${group}.` };
+      }
+      const d = new Date(date);
+      if (Number.isNaN(d.getTime())) return { error: "Date invalide." };
+      if (!(amount >= 0)) return { error: "Le montant doit être positif." };
+      const t = await prisma.personalTransaction.create({
+        data: {
+          date: d, amount,
+          group: group as TransactionGroup, category: category as TransactionCategory,
+          description, notes: notes || null, recurring: recurring || false,
+          manuallyClassified: true,
+        },
+      });
+      return {
+        success: true, id: t.id,
+        date: t.date.toISOString().slice(0, 10),
+        amount: Number(t.amount), group, category, description,
+      };
+    },
+  }),
+
+  splitTransaction: tool({
+    description:
+      "Diviser une transaction en plusieurs sous-transactions dont la somme égale le montant du parent.",
+    inputSchema: z.object({
+      transactionId: z.string(),
+      splits: z
+        .array(
+          z.object({
+            amount: z.number(),
+            group: groupEnum,
+            category: categoryEnum,
+            description: z.string().optional(),
+          })
+        )
+        .min(2),
+    }),
+    execute: async ({ transactionId, splits }) => {
+      const parent = await prisma.personalTransaction.findUnique({ where: { id: transactionId } });
+      if (!parent) return { error: "Transaction introuvable." };
+      if (parent.parentId) return { error: "Cette transaction est déjà une sous-transaction." };
+      const existing = await prisma.personalTransaction.count({ where: { parentId: parent.id } });
+      if (existing > 0) return { error: "Cette transaction est déjà divisée." };
+      for (const s of splits) {
+        if (!isCategoryInGroup(s.group, s.category)) {
+          return { error: `La catégorie ${s.category} n'appartient pas au groupe ${s.group}.` };
+        }
+      }
+      const total = splits.reduce((sum, s) => sum + s.amount, 0);
+      const parentAmount = Number(parent.amount);
+      if (Math.abs(total - parentAmount) > 0.01) {
+        return { error: `La somme des sous-transactions (${total}) doit égaler le parent (${parentAmount}).` };
+      }
+      const created = await prisma.$transaction(
+        splits.map((s) =>
+          prisma.personalTransaction.create({
+            data: {
+              date: parent.date, amount: s.amount,
+              group: s.group as TransactionGroup, category: s.category as TransactionCategory,
+              description: s.description || parent.description,
+              notes: parent.notes, recurring: parent.recurring,
+              parentId: parent.id, manuallyClassified: true,
+            },
+          })
+        )
+      );
+      return { success: true, parentId: parent.id, created: created.length };
+    },
+  }),
+
+  createRule: tool({
+    description:
+      "Créer une règle de classement automatique (ex. « toujours classer Netflix en Abonnements »).",
+    inputSchema: z.object({
+      name: z.string(),
+      matchType: z.enum(["CONTAINS", "STARTS_WITH", "ENDS_WITH", "EXACT", "REGEX"]).default("CONTAINS"),
+      matchValue: z.string(),
+      group: groupEnum,
+      category: categoryEnum,
+      priority: z.number().optional().default(0),
+    }),
+    execute: async ({ name, matchType, matchValue, group, category, priority }) => {
+      if (!isCategoryInGroup(group, category)) {
+        return { error: `La catégorie ${category} n'appartient pas au groupe ${group}.` };
+      }
+      if (matchType === "REGEX") {
+        const v = validateRegex(matchValue);
+        if (!v.ok) return { error: v.error };
+      }
+      const rule = await prisma.classificationRule.create({
+        data: {
+          name, matchType: matchType as MatchType, matchValue, matchField: "description",
+          group: group as TransactionGroup, category: category as TransactionCategory,
+          priority: priority ?? 0, active: true,
+        },
+      });
+      return { success: true, id: rule.id, name: rule.name, matchType, matchValue, group, category };
+    },
+  }),
+
+  setNetWorth: tool({
+    description:
+      "Enregistrer ou mettre à jour le patrimoine d'un mois (liquidités, épargne, investissements, immobilier, dettes).",
+    inputSchema: z.object({
+      month: z.number(), year: z.number(),
+      cash: z.number().optional(), savings: z.number().optional(),
+      investments: z.number().optional(), property: z.number().optional(), debt: z.number().optional(),
+      notes: z.string().optional(),
+    }),
+    execute: async ({ month, year, cash, savings, investments, property, debt, notes }) => {
+      const data = {
+        cash: cash ?? 0, savings: savings ?? 0, investments: investments ?? 0,
+        property: property ?? 0, debt: debt ?? 0, notes: notes || null,
+      };
+      const s = await prisma.netWorthSnapshot.upsert({
+        where: { month_year: { month, year } },
+        update: data,
+        create: { month, year, ...data },
+      });
+      const total =
+        Number(s.cash) + Number(s.savings) + Number(s.investments) + Number(s.property) - Number(s.debt);
+      return { success: true, month, year, total };
     },
   }),
 
