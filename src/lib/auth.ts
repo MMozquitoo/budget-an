@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { rateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -11,10 +11,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials, request) {
         // Blunt brute force on the shared password: cap attempts per IP.
-        // In-memory (see rate-limit.ts) — best-effort until Upstash/WAF is wired.
+        // Upstash-backed when configured, in-memory otherwise (see rate-limit.ts).
         const ip =
           (request?.headers?.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
-        if (!rateLimit(`login:${ip}`, 10, 10 * 60 * 1000).allowed) return null;
+        if (!(await checkRateLimit(`login:${ip}`, 10, 10 * 60)).allowed) return null;
 
         const hashB64 = process.env.AUTH_PASSWORD_HASH;
         if (!hashB64 || !credentials?.password) return null;
@@ -34,7 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 15 * 24 * 60 * 60,
   },
   callbacks: {
     authorized({ auth, request }) {
@@ -48,7 +48,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       if (isAuthApi) return true;
       if (isLogin) return true;
-      if (isCron) return true;
+      // Cron routes carry no session — require the CRON_SECRET bearer at the
+      // edge, so a future cron route that forgets to check it is still protected.
+      if (isCron) {
+        const secret = process.env.CRON_SECRET;
+        const ok = !!secret && request.headers.get("authorization") === `Bearer ${secret}`;
+        return ok ? true : Response.json({ error: "Unauthorized" }, { status: 401 });
+      }
 
       if (!isLoggedIn) {
         if (isApi) return Response.json({ error: "Unauthorized" }, { status: 401 });

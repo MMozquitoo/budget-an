@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { safe } from "@/lib/api";
+import { safe, badRequest } from "@/lib/api";
 import type { Prisma } from "@/generated/prisma/client";
 
 interface UIMessageLike {
@@ -41,6 +41,12 @@ export const PUT = safe(async (request: NextRequest, { params }: { params: Promi
   const { id } = await params;
   const body = await request.json();
   const messages: UIMessageLike[] = Array.isArray(body.messages) ? body.messages : [];
+
+  // Bound what a client can persist under one conversation.
+  if (messages.length > 1000) return badRequest("Trop de messages");
+  for (const m of messages) {
+    if (JSON.stringify(m).length > 100_000) return badRequest("Message trop volumineux");
+  }
 
   const firstUser = messages.find((m) => m.role === "user");
   const title = firstUser ? extractText(firstUser).slice(0, 60) : null;
