@@ -31,7 +31,7 @@ export default function ChatPage() {
   const { messages, status, sendMessage, setMessages } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<
     Array<{ id: string; title: string | null; updatedAt: string; messageCount: number }>
@@ -49,11 +49,24 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     if (!input.trim() || status !== "ready") return;
     sendMessage({ text: input });
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submit();
+  };
+
+  // Enter sends; Shift+Enter inserts a newline.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
   };
 
   const handleSuggestion = (text: string) => {
@@ -227,7 +240,7 @@ export default function ChatPage() {
               <div key={message.id} className="mb-4">
                 {message.role === "user" ? (
                   <div className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-br-md bg-indigo-600 px-4 py-2.5 text-sm text-white">
+                    <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-indigo-600 px-4 py-2.5 text-sm text-white">
                       {message.parts.map((part, i) =>
                         part.type === "text" ? <span key={i}>{part.text}</span> : null
                       )}
@@ -308,15 +321,21 @@ export default function ChatPage() {
         )}
         <form
           onSubmit={handleSubmit}
-          className="mx-auto flex max-w-2xl items-center gap-2"
+          className="mx-auto flex max-w-2xl items-end gap-2"
         >
-          <input
+          <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 128)}px`;
+            }}
+            onKeyDown={handleKeyDown}
             placeholder="Pose une question sur tes finances..."
             disabled={isStreaming}
-            className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 transition-all"
+            rows={1}
+            className="max-h-32 flex-1 resize-none overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 transition-all"
           />
           <button
             type="submit"
