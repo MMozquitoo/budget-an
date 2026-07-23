@@ -12,6 +12,8 @@ import {
   PiggyBank,
   CalendarDays,
   RotateCcw,
+  History,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TrendsChart, SummaryChart, NetWorthChart } from "@/components/ChatCharts";
@@ -30,6 +32,12 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<
+    Array<{ id: string; title: string | null; updatedAt: string; messageCount: number }>
+  >([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const savedSigRef = useRef("");
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -53,10 +61,132 @@ export default function ChatPage() {
     sendMessage({ text });
   };
 
+  const loadConversations = useCallback(() => {
+    fetch("/api/conversations")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setConversations)
+      .catch(() => {});
+  }, []);
+
+  // On mount: load the history list and resume the last conversation, if any.
+  useEffect(() => {
+    loadConversations();
+    const last = typeof window !== "undefined" ? localStorage.getItem("currentConversation") : null;
+    if (!last) return;
+    fetch(`/api/conversations/${last}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        if (c?.messages?.length) {
+          setMessages(c.messages as Parameters<typeof setMessages>[0]);
+          setConversationId(last);
+          savedSigRef.current = c.messages.map((m: { id?: string }) => m.id).join(",");
+        } else if (typeof window !== "undefined") {
+          localStorage.removeItem("currentConversation");
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist after each completed exchange (creating the conversation lazily).
+  useEffect(() => {
+    if (status !== "ready" || messages.length === 0) return;
+    const sig = messages.map((m) => m.id).join(",");
+    if (sig === savedSigRef.current) return;
+    savedSigRef.current = sig;
+    let cancelled = false;
+    (async () => {
+      let id = conversationId;
+      if (!id) {
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }).then((r) => r.json());
+        id = res.id;
+        if (cancelled || !id) return;
+        setConversationId(id);
+        if (typeof window !== "undefined") localStorage.setItem("currentConversation", id);
+      }
+      await fetch(`/api/conversations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages }),
+      });
+      if (!cancelled) loadConversations();
+    })();
+    return () => { cancelled = true; };
+  }, [status, messages, conversationId, loadConversations]);
+
+  const newConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    savedSigRef.current = "";
+    if (typeof window !== "undefined") localStorage.removeItem("currentConversation");
+    setShowHistory(false);
+  };
+
+  const loadConversation = async (id: string) => {
+    const c = await fetch(`/api/conversations/${id}`).then((r) => (r.ok ? r.json() : null));
+    if (!c) return;
+    const msgs = (c.messages ?? []) as Parameters<typeof setMessages>[0];
+    setMessages(msgs);
+    setConversationId(id);
+    savedSigRef.current = (c.messages ?? []).map((m: { id?: string }) => m.id).join(",");
+    if (typeof window !== "undefined") localStorage.setItem("currentConversation", id);
+    setShowHistory(false);
+  };
+
+  const deleteConversation = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+    if (id === conversationId) newConversation();
+    loadConversations();
+  };
+
   const isStreaming = status === "streaming";
 
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col bg-white md:h-[100dvh] md:bg-gray-50">
+      {/* Top bar: conversation history */}
+      <div className="flex items-center justify-end border-b border-gray-100 px-3 py-1.5">
+        <button
+          onClick={() => { if (!showHistory) loadConversations(); setShowHistory((v) => !v); }}
+          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+        >
+          <History className="h-4 w-4" /> Historique
+        </button>
+      </div>
+      {showHistory && (
+        <div className="max-h-64 overflow-y-auto border-b border-gray-100 bg-white">
+          {conversations.length === 0 ? (
+            <p className="px-4 py-3 text-xs text-gray-400">Aucune conversation enregistrée.</p>
+          ) : (
+            conversations.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => loadConversation(c.id)}
+                className={cn(
+                  "flex cursor-pointer items-center justify-between gap-2 px-4 py-2.5 hover:bg-gray-50",
+                  c.id === conversationId && "bg-indigo-50"
+                )}
+              >
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
+                  {c.title || "Sans titre"}
+                </span>
+                <span className="shrink-0 text-[10px] text-gray-400">{c.messageCount} msg</span>
+                <button
+                  onClick={(e) => deleteConversation(c.id, e)}
+                  className="shrink-0 rounded p-1 text-gray-300 hover:text-red-500"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Messages area */}
       <div
         ref={scrollRef}
@@ -168,7 +298,7 @@ export default function ChatPage() {
         {messages.length > 0 && (
           <div className="mb-2 flex justify-center">
             <button
-              onClick={() => setMessages([])}
+              onClick={newConversation}
               className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
               <RotateCcw className="h-3 w-3" />

@@ -142,6 +142,37 @@ model Budget {
   @@map("budgets")
 }
 
+// ──────────────────────────────────────────────
+// CHAT MEMORY — persisted assistant conversations
+// ──────────────────────────────────────────────
+
+model Conversation {
+  id        String    @id @default(cuid())
+  title     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@index([updatedAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  /// Full UIMessage (id, role, parts) so a conversation reloads faithfully,
+  /// including inline tool charts. `content` is the extracted text for titles.
+  data           Json
+  seq            Int
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
 enum TransactionGroup {
   INCOME
   FIXED_EXPENSE
