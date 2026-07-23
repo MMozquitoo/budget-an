@@ -26,6 +26,7 @@ import {
   GROUP_ORDER,
 } from "@/lib/utils";
 import { IncomeVsExpensesChart, GroupTrendChart } from "@/components/TrendChart";
+import BudgetProgressCard from "@/components/BudgetProgressCard";
 
 interface SummaryData {
   month: number;
@@ -266,6 +267,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <BudgetProgressCard month={month} year={year} />
 
       {/* Group breakdown cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -8,13 +8,14 @@ import {
   CATEGORIES_BY_GROUP,
   GROUP_ORDER,
   monthRange,
+  monthRangeBack,
   monthPartsInZone,
   monthKeyInZone,
   shiftMonth,
 } from "@/lib/utils";
 import { aggregate, topCategories } from "@/lib/summary";
 import { detectRecurring, summariseRecurring } from "@/lib/recurring";
-import { buildReport, isBudgetable } from "@/lib/budgets";
+import { buildReport, isBudgetable, suggestFromTransactions } from "@/lib/budgets";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -231,6 +232,76 @@ export const budgetTools = {
         label: CATEGORY_LABELS[category],
         amount: Number(saved.amount),
       };
+    },
+  }),
+
+  prefillBudgets: tool({
+    description:
+      "Pré-remplir les budgets d'un mois à partir de la moyenne des N derniers mois (Adrien: 6–9). Écrase les budgets existants des catégories concernées pour ce mois.",
+    inputSchema: z.object({
+      month: z.number().describe("Mois cible (1-12)"),
+      year: z.number().describe("Année cible"),
+      months: z.number().default(6).describe("Fenêtre d'historique en mois (6–9 recommandé)"),
+    }),
+    execute: async ({ month, year, months }) => {
+      const window = Math.min(Math.max(months, 1), 24);
+      const { gte, lt } = monthRangeBack(year, month, window);
+      const txs = await prisma.personalTransaction.findMany({
+        where: { parentId: null, date: { gte, lt } },
+        select: { amount: true, category: true, date: true },
+      });
+      const suggestions = suggestFromTransactions(
+        txs.map((t) => ({ amount: Number(t.amount), category: t.category as string, date: t.date })),
+        year, month, window
+      );
+      const entries = Object.entries(suggestions);
+      if (entries.length === 0) {
+        return { month, year, created: 0, message: "Pas assez d'historique pour proposer des budgets." };
+      }
+      await prisma.$transaction(
+        entries.map(([category, amount]) =>
+          prisma.budget.upsert({
+            where: { month_year_category: { month, year, category: category as TransactionCategory } },
+            update: { amount },
+            create: { month, year, category: category as TransactionCategory, amount },
+          })
+        )
+      );
+      return {
+        month, year, months: window, created: entries.length,
+        budgets: entries
+          .map(([category, amount]) => ({ category, label: CATEGORY_LABELS[category], amount }))
+          .sort((a, b) => b.amount - a.amount),
+      };
+    },
+  }),
+
+  copyBudgets: tool({
+    description: "Copier les budgets d'un mois vers un autre (report d'un mois sur l'autre).",
+    inputSchema: z.object({
+      fromMonth: z.number().describe("Mois source (1-12)"),
+      fromYear: z.number().describe("Année source"),
+      toMonth: z.number().describe("Mois cible (1-12)"),
+      toYear: z.number().describe("Année cible"),
+    }),
+    execute: async ({ fromMonth, fromYear, toMonth, toYear }) => {
+      if (fromMonth === toMonth && fromYear === toYear) {
+        return { error: "Le mois source et le mois cible doivent différer." };
+      }
+      const source = await prisma.budget.findMany({ where: { month: fromMonth, year: fromYear } });
+      if (source.length === 0) {
+        return { copied: 0, message: "Aucun budget à copier sur le mois source." };
+      }
+      await prisma.$transaction(
+        source.map((b) =>
+          prisma.budget.upsert({
+            where: { month_year_category: { month: toMonth, year: toYear, category: b.category } },
+            update: { amount: b.amount },
+            create: { month: toMonth, year: toYear, category: b.category, amount: b.amount },
+          })
+        )
+      );
+      return { copied: source.length, fromMonth, fromYear, toMonth, toYear };
     },
   }),
 

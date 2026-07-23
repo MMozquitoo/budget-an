@@ -6,6 +6,7 @@ import {
   buildReport,
   roundNice,
   suggestBudgets,
+  suggestFromTransactions,
 } from "./budgets";
 
 describe("CATEGORY_GROUP / isBudgetable", () => {
@@ -124,5 +125,41 @@ describe("suggestBudgets", () => {
       "median"
     );
     expect(s.GROCERIES).toBe(400); // median of 100,400,420
+  });
+});
+
+describe("suggestFromTransactions", () => {
+  // Anchor = April 2026; a 3-month window covers Jan, Feb, Mar 2026.
+  const at = (iso: string, category: string, amount: number) => ({
+    amount,
+    category,
+    date: new Date(iso),
+  });
+
+  it("buckets transactions into the N months before the anchor and averages", () => {
+    const s = suggestFromTransactions(
+      [
+        at("2026-01-15T12:00:00Z", "GROCERIES", 400),
+        at("2026-02-15T12:00:00Z", "GROCERIES", 420),
+        at("2026-03-15T12:00:00Z", "GROCERIES", 380),
+        // Outside the window (the anchor month itself) → ignored:
+        at("2026-04-15T12:00:00Z", "GROCERIES", 9999),
+      ],
+      2026,
+      4,
+      3
+    );
+    expect(s.GROCERIES).toBe(400); // (400+420+380)/3
+  });
+
+  it("counts empty months as zero in the average", () => {
+    // Only one month of RESTAURANTS spend over a 3-month window.
+    const s = suggestFromTransactions(
+      [at("2026-02-15T12:00:00Z", "RESTAURANTS", 300)],
+      2026,
+      4,
+      3
+    );
+    expect(s.RESTAURANTS).toBe(100); // 300/3 → nearest 10
   });
 });

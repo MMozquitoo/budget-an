@@ -11,6 +11,7 @@ import {
   Settings,
   MessageCircle,
   Sparkles,
+  Wallet,
   LogOut,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
   { name: "Opérations", href: "/household", icon: ListPlus },
+  { name: "Budgets", href: "/budgets", icon: Wallet },
   { name: "Calendrier", href: "/calendar", icon: CalendarDays },
   { name: "Abonnements", href: "/subscriptions", icon: Repeat },
   { name: "Patrimoine", href: "/net-worth", icon: TrendingUp },
@@ -28,6 +30,7 @@ const navigation = [
 const mobileNav = [
   { name: "Chat", href: "/", icon: MessageCircle },
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Budgets", href: "/budgets", icon: Wallet },
   { name: "Opér.", href: "/household", icon: ListPlus },
   { name: "Abonn.", href: "/subscriptions", icon: Repeat },
   { name: "Patrim.", href: "/net-worth", icon: TrendingUp },

@@ -8,7 +8,7 @@
  *   - for savings categories it is a TARGET you want to reach.
  */
 
-import { CATEGORIES_BY_GROUP } from "./utils";
+import { CATEGORIES_BY_GROUP, monthKeyInZone, shiftMonth } from "./utils";
 
 /** category → group, derived from the canonical taxonomy in utils.ts. */
 export const CATEGORY_GROUP: Record<string, string> = Object.fromEntries(
@@ -167,4 +167,29 @@ export function suggestBudgets(
     if (rounded > 0) out[category] = rounded;
   }
   return out;
+}
+
+/**
+ * Suggest budgets from a flat transaction list, bucketed into the `months` whole
+ * months BEFORE the anchor (month, year). Months with no spend still count as a
+ * zero in the average, so a sporadic category is not over-budgeted. Shared by the
+ * /api/budgets/suggest route and the chat agent's prefill tool.
+ */
+export function suggestFromTransactions(
+  transactions: Array<{ amount: number; category: string; date: Date }>,
+  anchorYear: number,
+  anchorMonth: number,
+  months: number
+): Record<string, number> {
+  const buckets = new Map<string, Record<string, number>>();
+  for (let i = months; i >= 1; i--) {
+    const { year, month } = shiftMonth(anchorYear, anchorMonth, -i);
+    buckets.set(`${year}-${String(month).padStart(2, "0")}`, {});
+  }
+  for (const t of transactions) {
+    const bucket = buckets.get(monthKeyInZone(t.date));
+    if (!bucket) continue;
+    bucket[t.category] = (bucket[t.category] ?? 0) + t.amount;
+  }
+  return suggestBudgets([...buckets.values()]);
 }
