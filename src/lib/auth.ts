@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -8,7 +9,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         password: { label: "Mot de passe", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        // Blunt brute force on the shared password: cap attempts per IP.
+        // In-memory (see rate-limit.ts) — best-effort until Upstash/WAF is wired.
+        const ip =
+          (request?.headers?.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+        if (!rateLimit(`login:${ip}`, 10, 10 * 60 * 1000).allowed) return null;
+
         const hashB64 = process.env.AUTH_PASSWORD_HASH;
         if (!hashB64 || !credentials?.password) return null;
         const hash = Buffer.from(hashB64, "base64").toString();

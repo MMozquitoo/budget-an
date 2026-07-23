@@ -10,6 +10,10 @@
 
 import { classify, type RuleLike } from "./rules";
 
+// Guardrails for the web import: reject oversized payloads before parsing.
+export const MAX_CSV_BYTES = 2_000_000; // ~2 MB
+export const MAX_CSV_ROWS = 20_000;
+
 // Bank "Catégorie > Sous-Catégorie" → [group, category]
 export const MAPPING: Record<string, [string, string]> = {
   "Incomes > Salaries": ["INCOME", "SALARY"],

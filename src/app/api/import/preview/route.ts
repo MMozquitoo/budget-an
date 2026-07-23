@@ -1,15 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { safe, badRequest } from "@/lib/api";
-import { parseCSV, prepareRows, dedupe, csvDateRange } from "@/lib/import";
+import { parseCSV, prepareRows, dedupe, csvDateRange, MAX_CSV_BYTES, MAX_CSV_ROWS } from "@/lib/import";
 
 // POST /api/import/preview — parse + classify + dedup a CSV WITHOUT writing.
 export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
   const csv = typeof body.csv === "string" ? body.csv : "";
   if (!csv.trim()) return badRequest("CSV vide");
+  if (csv.length > MAX_CSV_BYTES) return badRequest("Fichier trop volumineux (max 2 Mo)");
 
   const rows = parseCSV(csv);
+  if (rows.length > MAX_CSV_ROWS) return badRequest("Trop de lignes (max 20 000)");
   const rules = await prisma.classificationRule.findMany({
     where: { active: true },
     orderBy: { priority: "desc" },
