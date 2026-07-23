@@ -9,7 +9,7 @@ import {
   CATEGORIES_BY_GROUP,
   GROUP_ORDER,
 } from "@/lib/utils";
-import { Plus, Trash2, Pencil, Check, X, Settings } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, Settings, Sparkles } from "lucide-react";
 
 interface Rule {
   id: string;
@@ -21,6 +21,15 @@ interface Rule {
   group: string;
   category: string;
   active: boolean;
+}
+
+interface Suggestion {
+  payee: string;
+  matchValue: string;
+  group: string;
+  category: string;
+  count: number;
+  samples: string[];
 }
 
 const MATCH_TYPES = [
@@ -44,6 +53,7 @@ export default function RulesPage() {
     group: "VARIABLE_EXPENSE",
     category: "GROCERIES",
   });
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
   const fetchRules = () => {
     setLoading(true);
@@ -53,7 +63,14 @@ export default function RulesPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchRules(); }, []);
+  const fetchSuggestions = () => {
+    fetch("/api/rules/suggestions")
+      .then((r) => (r.ok ? r.json() : { suggestions: [] }))
+      .then((d) => setSuggestions(d.suggestions ?? []))
+      .catch(() => setSuggestions([]));
+  };
+
+  useEffect(() => { fetchRules(); fetchSuggestions(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +124,24 @@ export default function RulesPage() {
     setShowForm(false);
     setEditingId(null);
     setForm({ name: "", priority: 0, matchType: "CONTAINS", matchValue: "", group: "VARIABLE_EXPENSE", category: "GROCERIES" });
+  };
+
+  const createFromSuggestion = async (s: Suggestion) => {
+    await fetch("/api/rules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: `${CATEGORY_LABELS[s.category] || s.category} (auto)`,
+        matchType: "CONTAINS",
+        matchValue: s.matchValue,
+        matchField: "description",
+        group: s.group,
+        category: s.category,
+        priority: 0,
+      }),
+    });
+    fetchRules();
+    fetchSuggestions();
   };
 
   const availableCategories = CATEGORIES_BY_GROUP[form.group] || [];
@@ -233,6 +268,43 @@ export default function RulesPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Suggestions mined from repeated manual corrections */}
+      {suggestions.length > 0 && (
+        <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50/50 p-5">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Sparkles className="h-5 w-5 text-indigo-600" />
+            <h2 className="font-semibold text-gray-900">Règles suggérées</h2>
+            <span className="text-xs text-gray-500">
+              d&apos;après tes corrections manuelles répétées
+            </span>
+          </div>
+          <div className="space-y-2">
+            {suggestions.map((s) => (
+              <div
+                key={s.payee}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    «&nbsp;{s.matchValue}&nbsp;» → {GROUP_LABELS[s.group]} ·{" "}
+                    {CATEGORY_LABELS[s.category] || s.category}
+                  </p>
+                  <p className="truncate text-xs text-gray-400">
+                    {s.count} corrections · ex. {s.samples[0]}
+                  </p>
+                </div>
+                <button
+                  onClick={() => createFromSuggestion(s)}
+                  className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  <Check className="h-4 w-4" /> Créer la règle
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -18,6 +18,7 @@ import { detectRecurring, summariseRecurring } from "@/lib/recurring";
 import { buildReport, isBudgetable, suggestFromTransactions } from "@/lib/budgets";
 import { computeInsights } from "@/lib/insights-data";
 import { accountBreakdown } from "@/lib/accounts";
+import { suggestRules } from "@/lib/autorules";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -369,6 +370,37 @@ export const budgetTools = {
         txs.map((t) => ({ notes: t.notes, group: t.group, amount: Number(t.amount) }))
       );
       return { month, year, accounts };
+    },
+  }),
+
+  suggestAutoRules: tool({
+    description:
+      "Proposer des règles de classement automatiques à partir de tes corrections manuelles répétées (mêmes émetteurs reclassés plusieurs fois à la main).",
+    inputSchema: z.object({}),
+    execute: async () => {
+      const [manual, rules] = await Promise.all([
+        prisma.personalTransaction.findMany({
+          where: { manuallyClassified: true, parentId: null },
+          select: { description: true, notes: true, group: true, category: true },
+        }),
+        prisma.classificationRule.findMany(),
+      ]);
+      const suggestions = suggestRules(
+        manual.map((t) => ({ description: t.description, notes: t.notes, group: t.group, category: t.category })),
+        rules
+      );
+      return {
+        count: suggestions.length,
+        suggestions: suggestions.map((s) => ({
+          payee: s.payee,
+          matchValue: s.matchValue,
+          group: s.group,
+          groupLabel: GROUP_LABELS[s.group],
+          category: s.category,
+          categoryLabel: CATEGORY_LABELS[s.category],
+          count: s.count,
+        })),
+      };
     },
   }),
 
