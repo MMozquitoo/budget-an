@@ -20,6 +20,7 @@ import { computeInsights } from "@/lib/insights-data";
 import { accountBreakdown } from "@/lib/accounts";
 import { suggestRules } from "@/lib/autorules";
 import { isCategoryInGroup, validateRegex } from "@/lib/rules";
+import { computeForecast } from "@/lib/forecast-data";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -401,6 +402,27 @@ export const budgetTools = {
           categoryLabel: CATEGORY_LABELS[s.category],
           count: s.count,
         })),
+      };
+    },
+  }),
+
+  getCashflowForecast: tool({
+    description:
+      "Prévision de trésorerie : solde projeté sur les prochains mois à partir du flux net moyen. Répond à « est-ce que je passe la fin de mois / les prochains mois ? ».",
+    inputSchema: z.object({
+      horizon: z.number().default(6).describe("Nombre de mois à projeter (1-12)"),
+      startingBalance: z.number().optional().describe("Solde de départ ; défaut = trésorerie du dernier patrimoine"),
+    }),
+    execute: async ({ horizon, startingBalance }) => {
+      const r = await computeForecast(6, horizon ?? 6, startingBalance);
+      return {
+        startingBalance: Math.round(r.startingBalance),
+        startingSource: r.startingSource,
+        avgNetFlow: Math.round(r.avgNetFlow),
+        points: r.points.map((p) => ({ month: p.key, projected: Math.round(p.projected) })),
+        shortfall: r.shortfall
+          ? { month: r.shortfall.key, projected: Math.round(r.shortfall.projected) }
+          : null,
       };
     },
   }),
