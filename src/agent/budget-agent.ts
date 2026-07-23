@@ -17,6 +17,7 @@ import { aggregate, topCategories } from "@/lib/summary";
 import { detectRecurring, summariseRecurring } from "@/lib/recurring";
 import { buildReport, isBudgetable, suggestFromTransactions } from "@/lib/budgets";
 import { computeInsights } from "@/lib/insights-data";
+import { accountBreakdown } from "@/lib/accounts";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -349,6 +350,25 @@ export const budgetTools = {
         count: r.recommendations.length,
         recommendations: r.recommendations,
       };
+    },
+  }),
+
+  getAccountBreakdown: tool({
+    description:
+      "Répartition des dépenses et revenus par compte/carte pour un mois (le compte de chaque transaction est stocké dans ses notes).",
+    inputSchema: z.object({
+      month: z.number().describe("Mois (1-12)"),
+      year: z.number().describe("Année"),
+    }),
+    execute: async ({ month, year }) => {
+      const txs = await prisma.personalTransaction.findMany({
+        where: { parentId: null, date: monthRange(year, month) },
+        select: { notes: true, group: true, amount: true },
+      });
+      const accounts = accountBreakdown(
+        txs.map((t) => ({ notes: t.notes, group: t.group, amount: Number(t.amount) }))
+      );
+      return { month, year, accounts };
     },
   }),
 

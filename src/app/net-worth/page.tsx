@@ -146,6 +146,8 @@ export default function NetWorthPage() {
   const latest = snapshots[snapshots.length - 1];
   const prev = snapshots[snapshots.length - 2];
   const change = latest && prev ? latest.total - prev.total : 0;
+  const assets = latest ? latest.cash + latest.savings + latest.investments + latest.property : 0;
+  const debtRatio = assets > 0 ? (latest.debt / assets) * 100 : 0;
 
   if (loading) {
     return (
@@ -175,7 +177,7 @@ export default function NetWorthPage() {
 
       {/* KPI */}
       {latest && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">Patrimoine actuel</p>
             <p className={cn("text-2xl font-bold", latest.total >= 0 ? "text-emerald-600" : "text-red-600")}>
@@ -199,6 +201,9 @@ export default function NetWorthPage() {
             <p className="text-sm text-gray-500">Dette totale</p>
             <p className="text-2xl font-bold text-red-600">
               {formatCurrency(latest.debt)}
+            </p>
+            <p className="mt-1 text-xs text-gray-400">
+              Ratio dette / actifs : {debtRatio.toFixed(0)}%
             </p>
           </div>
         </div>
@@ -319,29 +324,53 @@ export default function NetWorthPage() {
       {/* Chart */}
       {chartData.length >= 2 && (
         <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Évolution du patrimoine
+          <h2 className="mb-1 text-lg font-semibold text-gray-900">
+            Composition du patrimoine
           </h2>
+          <p className="mb-4 text-xs text-gray-400">
+            Répartition des actifs par mois (hors dettes)
+          </p>
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-              <defs>
-                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-              </defs>
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="total"
-                stroke="#6366f1"
-                strokeWidth={3}
-                fill="url(#colorTotal)"
-              />
+              <Area type="monotone" dataKey="cash" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.7} />
+              <Area type="monotone" dataKey="savings" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.7} />
+              <Area type="monotone" dataKey="investments" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.7} />
+              <Area type="monotone" dataKey="property" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.7} />
             </AreaChart>
           </ResponsiveContainer>
+
+          {latest && assets > 0 && (
+            <div className="mt-5 border-t border-gray-100 pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                Allocation actuelle
+              </p>
+              <div className="flex h-3 w-full overflow-hidden rounded-full">
+                <div style={{ width: `${(latest.cash / assets) * 100}%` }} className="bg-emerald-500" />
+                <div style={{ width: `${(latest.savings / assets) * 100}%` }} className="bg-violet-500" />
+                <div style={{ width: `${(latest.investments / assets) * 100}%` }} className="bg-indigo-500" />
+                <div style={{ width: `${(latest.property / assets) * 100}%` }} className="bg-amber-500" />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                {([
+                  ["Liquidités", latest.cash, "bg-emerald-500"],
+                  ["Épargne", latest.savings, "bg-violet-500"],
+                  ["Investissements", latest.investments, "bg-indigo-500"],
+                  ["Immobilier", latest.property, "bg-amber-500"],
+                ] as [string, number, string][]).map(([label, val, color]) => (
+                  <div key={label} className="flex items-center gap-1.5">
+                    <span className={cn("h-2 w-2 rounded-full", color)} />
+                    <span className="text-gray-500">{label}</span>
+                    <span className="ml-auto font-medium text-gray-700">
+                      {Math.round((val / assets) * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
