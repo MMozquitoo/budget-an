@@ -16,6 +16,7 @@ import {
 import { aggregate, topCategories } from "@/lib/summary";
 import { detectRecurring, summariseRecurring } from "@/lib/recurring";
 import { buildReport, isBudgetable, suggestFromTransactions } from "@/lib/budgets";
+import { computeInsights } from "@/lib/insights-data";
 
 const groupEnum = z.enum(GROUP_ORDER as unknown as [string, ...string[]]);
 const allCategories = Object.values(CATEGORIES_BY_GROUP).flat();
@@ -302,6 +303,52 @@ export const budgetTools = {
         )
       );
       return { copied: source.length, fromMonth, fromYear, toMonth, toYear };
+    },
+  }),
+
+  analyzeSpending: tool({
+    description:
+      "Analyser un mois : les postes qui ont le plus bougé vs leur moyenne, la tendance du taux d'épargne, et l'état des budgets. Le « analyse » de la démarche reporting → analyse → recommandation → alerte.",
+    inputSchema: z.object({
+      month: z.number().optional().describe("Mois (1-12) ; défaut = dernier mois avec données"),
+      year: z.number().optional().describe("Année"),
+      months: z.number().default(6).describe("Fenêtre d'analyse en mois (2-12)"),
+    }),
+    execute: async ({ month, year, months }) => {
+      const r = await computeInsights(month ?? null, year ?? null, months ?? 6);
+      return {
+        month: r.month, year: r.year, months: r.months,
+        savings: r.savings,
+        budget: r.budget,
+        movements: r.movements.slice(0, 8).map((m) => ({
+          category: m.category,
+          label: m.label,
+          group: GROUP_LABELS[m.group],
+          current: Math.round(m.current),
+          average: Math.round(m.average),
+          delta: Math.round(m.delta),
+          deltaPct: Math.round(m.deltaPct),
+          direction: m.direction,
+        })),
+      };
+    },
+  }),
+
+  getRecommendations: tool({
+    description:
+      "Recommandations concrètes et priorisées à partir de l'analyse : budgets dépassés, abonnements inactifs, hausses de prix, dépenses atypiques, épargne en baisse.",
+    inputSchema: z.object({
+      month: z.number().optional().describe("Mois (1-12) ; défaut = dernier mois avec données"),
+      year: z.number().optional().describe("Année"),
+    }),
+    execute: async ({ month, year }) => {
+      const r = await computeInsights(month ?? null, year ?? null, 6);
+      return {
+        month: r.month, year: r.year,
+        totalOpportunity: r.totalOpportunity,
+        count: r.recommendations.length,
+        recommendations: r.recommendations,
+      };
     },
   }),
 

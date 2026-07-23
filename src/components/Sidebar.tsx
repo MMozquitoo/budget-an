@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Sparkles,
   Wallet,
+  Lightbulb,
   LogOut,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
   { name: "Opérations", href: "/household", icon: ListPlus },
   { name: "Budgets", href: "/budgets", icon: Wallet },
+  { name: "Analyse", href: "/insights", icon: Lightbulb },
   { name: "Calendrier", href: "/calendar", icon: CalendarDays },
   { name: "Abonnements", href: "/subscriptions", icon: Repeat },
   { name: "Patrimoine", href: "/net-worth", icon: TrendingUp },
