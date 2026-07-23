@@ -10,10 +10,11 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 
-const hasUpstash = !!(
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-);
-const redis = hasUpstash ? Redis.fromEnv() : null;
+// The Vercel Marketplace Upstash integration injects KV_REST_API_URL/TOKEN;
+// a manual Upstash setup uses UPSTASH_REDIS_REST_URL/TOKEN. Accept both.
+const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = restUrl && restToken ? new Redis({ url: restUrl, token: restToken }) : null;
 
 // ── In-memory fallback (also the unit-test target) ──
 interface Bucket {
