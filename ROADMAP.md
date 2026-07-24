@@ -42,9 +42,11 @@ Hecho:
 - **Anti-inyección** reforzado: las herramientas de escritura del agente solo se
   activan por petición explícita de Adrien, nunca por el contenido de una transacción.
 
-Pendiente:
-- **Sentry** — código cableado y *gated por DSN*; falta **crear el proyecto Sentry
-  y añadir `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`** (como se hizo con Upstash). `S`
+Hecho (2026-07-24):
+- **Sentry** — integración nativa de Vercel Marketplace (plan Developer, $0/mes),
+  conectada al proyecto. Provisiona `NEXT_PUBLIC_SENTRY_DSN` (no `SENTRY_DSN`
+  suelto); `instrumentation.ts` cae a esa var en servidor/edge ya que el DSN no
+  es secreto.
 
 ---
 
@@ -80,7 +82,7 @@ Pendiente:
 
 | # | Bloque | Esfuerzo | Por qué |
 |---|--------|----------|---------|
-| 1 | Conectar Sentry (crear proyecto + DSN) | `S` | Visibilidad de errores en prod, ahora que el agente escribe |
+| ~~1~~ | ~~Conectar Sentry~~ | `S` | ✅ Hecho 2026-07-24 |
 | 2 | Objectifs d'épargne con fecha | `M` | Cierra la feature de ahorro |
 | 3 | Server Components, página por página | `L`–`XL` | Rendimiento en móvil; hacerlo incremental |
 | 4 | Decidir canal de **Alertes** y activarlo | `M` | El peldaño 4 de la escalera; el motor ya está |
