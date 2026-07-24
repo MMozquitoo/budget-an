@@ -26,8 +26,9 @@ solo *alerting*, parcado) — más la autonomía y la memoria.
 | **Mémoire du chat** | Conversaciones persistidas (esquema + migración), panel "Historique", reanudar/borrar hilos. |
 | **Import depuis le navigateur** | Subir CSV → aperçu (nuevas/duplicadas/no mapeadas) → confirmar. Incremental, no destructivo. Motor compartido con el CLI. |
 | **Chat UX** | Markdown real (react-markdown), input multilínea (Enter envía / Shift+Enter salto). |
+| **Objectifs d'épargne avec date** | Montant cible + fecha límite, seguimiento acumulado (no mensual) derivado de las transacciones de ahorro (categoría elegida o todo el grupo). Sección en `/budgets` + herramientas de chat. |
 
-Cobertura: **102 tests** sobre la lógica de dinero/import/reglas/insights/rate-limit.
+Cobertura: **114 tests** sobre la lógica de dinero/import/reglas/insights/rate-limit/objectifs.
 
 ---
 
@@ -66,10 +67,7 @@ Hecho (2026-07-24):
 
 ## 🛠️ Técnico que queda (sin dependencias externas)
 
-1. **Objectifs d'épargne con fecha** `M` — hoy el objetivo es mensual por
-   categoría; falta la variante acumulada *"juntar 10k para diciembre"* con
-   seguimiento a la meta (esquema `SavingsGoal` + migración + UI + tool de chat).
-2. **Migrar a Server Components** `L`–`XL` — todas las páginas son
+1. **Migrar a Server Components** `L`–`XL` — todas las páginas son
    `"use client"` + `useEffect` + `fetch`. Migrarlas a RSC (con islas cliente
    para la interacción) quita las cascadas de spinners y los ~21 warnings de
    `set-state-in-effect`. Es el refactor más grande y con más riesgo; conviene
@@ -83,7 +81,7 @@ Hecho (2026-07-24):
 | # | Bloque | Esfuerzo | Por qué |
 |---|--------|----------|---------|
 | ~~1~~ | ~~Conectar Sentry~~ | `S` | ✅ Hecho 2026-07-24 |
-| 2 | Objectifs d'épargne con fecha | `M` | Cierra la feature de ahorro |
+| ~~2~~ | ~~Objectifs d'épargne con fecha~~ | `M` | ✅ Hecho 2026-07-24 |
 | 3 | Server Components, página por página | `L`–`XL` | Rendimiento en móvil; hacerlo incremental |
 | 4 | Decidir canal de **Alertes** y activarlo | `M` | El peldaño 4 de la escalera; el motor ya está |
 | 5 | (Estratégico) Sync bancario y/o Suite pro | `XL` | Requieren tu decisión/cuenta |

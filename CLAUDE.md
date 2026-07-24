@@ -44,12 +44,13 @@ Tailwind v4 · Recharts · Upstash (rate-limit) · Sentry (gated). Desplegada en
   `/rules` · `/login`.
 - **Agente** (`src/agent/budget-agent.ts`): lectura (query/summary/trends/subscriptions/
   netWorth/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
-  cashflowForecast) + **escritura** (reclassify, createTransaction, splitTransaction,
-  createRule, setBudget, prefillBudgets, copyBudgets, setNetWorth). Delete NO existe
-  (a propósito). Bloque SÉCURITÉ en el prompt: las escrituras solo por petición
-  explícita de Adrien, nunca por el contenido de una transacción.
+  cashflowForecast/getSavingsGoals) + **escritura** (reclassify, createTransaction,
+  splitTransaction, createRule, setBudget, prefillBudgets, copyBudgets, setNetWorth,
+  createSavingsGoal, updateSavingsGoal). Delete NO existe (a propósito). Bloque
+  SÉCURITÉ en el prompt: las escrituras solo por petición explícita de Adrien,
+  nunca por el contenido de una transacción.
 - **Lógica pura testeada:** `lib/` summary, recurring, rules, budgets, insights,
-  recommend, accounts, forecast, import, autorules, rate-limit.
+  recommend, accounts, forecast, import, autorules, rate-limit, savings-goals.
 
 ## Seguridad / ops
 
