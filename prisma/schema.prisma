@@ -143,6 +143,33 @@ model Budget {
 }
 
 // ──────────────────────────────────────────────
+// SAVINGS GOALS — Cumulative target with a deadline (distinct from the
+// monthly Budget above). Progress is never stored here — it's always derived
+// from PersonalTransaction at read time, same philosophy as Budget.
+// ──────────────────────────────────────────────
+
+model SavingsGoal {
+  id           String                @id @default(cuid())
+  name         String
+  targetAmount Decimal               @db.Decimal(12, 2)
+  targetDate   DateTime
+  /// Only transactions on/after this date count toward progress. Defaults to
+  /// creation time; can be backdated if savings already started before the
+  /// goal was entered.
+  startDate    DateTime              @default(now())
+  /// Null = counts the whole SAVINGS group. If set, must be one of the
+  /// SAVINGS TransactionCategory values (enforced in the API/agent layer —
+  /// Postgres enums can't express "subset of an enum").
+  category     TransactionCategory?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([targetDate])
+  @@index([category])
+  @@map("savings_goals")
+}
+
+// ──────────────────────────────────────────────
 // CHAT MEMORY — persisted assistant conversations
 // ──────────────────────────────────────────────
 

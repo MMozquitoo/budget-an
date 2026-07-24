@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { formatCurrency, cn, CATEGORY_LABELS, CATEGORIES_BY_GROUP, GROUP_LABELS, GROUP_ORDER } from "@/lib/utils";
 import { Wallet, Sparkles, Copy, Trash2, Plus, AlertTriangle } from "lucide-react";
+import SavingsGoalsSection from "./SavingsGoalsSection";
 
 interface BudgetLine {
   category: string;
@@ -339,6 +340,8 @@ export default function BudgetsPage() {
           )}
         </>
       )}
+
+      <SavingsGoalsSection />
     </div>
   );
 }
