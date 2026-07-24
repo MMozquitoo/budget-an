@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   formatCurrency,
   formatCurrencyDecimal,
@@ -9,18 +7,8 @@ import {
   CATEGORY_LABELS,
 } from "@/lib/utils";
 import type { RecurringSeries } from "@/lib/recurring";
+import { getRecurringData } from "@/lib/recurring-data";
 import { Repeat, Calendar, TrendingUp, ArrowUpRight, ArrowDownRight, PauseCircle } from "lucide-react";
-
-interface RecurringResponse {
-  series: RecurringSeries[];
-  summary: {
-    count: number;
-    inactiveCount: number;
-    monthlyTotal: number;
-    yearlyTotal: number;
-    priceIncreases: number;
-  };
-}
 
 const CADENCE_LABELS: Record<string, string> = {
   MONTHLY: "mensuel",
@@ -29,42 +17,14 @@ const CADENCE_LABELS: Record<string, string> = {
   IRREGULAR: "irrégulier",
 };
 
-export default function SubscriptionsPage() {
-  const [data, setData] = useState<RecurringResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch(`/api/transactions/recurring?all=${showInactive}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`API ${r.status}`);
-        return r.json();
-      })
-      .then(setData)
-      .catch(() => setError("Impossible de charger les abonnements."))
-      .finally(() => setLoading(false));
-  }, [showInactive]);
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="py-16 text-center">
-        <p className="text-sm text-red-600">{error ?? "Erreur"}</p>
-      </div>
-    );
-  }
-
-  const { series, summary } = data;
+export default async function SubscriptionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string }>;
+}) {
+  const { all } = await searchParams;
+  const showInactive = all === "true";
+  const { series, summary } = await getRecurringData(18, showInactive);
 
   const byCategory = series.reduce((acc, s) => {
     (acc[s.category] ||= []).push(s);
@@ -131,14 +91,14 @@ export default function SubscriptionsPage() {
             </span>
           )}
           {summary.inactiveCount > 0 && (
-            <button
-              onClick={() => setShowInactive(!showInactive)}
+            <Link
+              href={`/subscriptions?all=${showInactive ? "false" : "true"}`}
               className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-600 transition-colors hover:bg-gray-200"
             >
               <PauseCircle className="h-3.5 w-3.5" />
               {showInactive ? "Masquer" : "Afficher"} {summary.inactiveCount} inactif
               {summary.inactiveCount > 1 ? "s" : ""}
-            </button>
+            </Link>
           )}
         </div>
       )}
