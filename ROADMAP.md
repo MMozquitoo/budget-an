@@ -70,9 +70,20 @@ Hecho (2026-07-24):
 1. **Migrar a Server Components** `L`–`XL` — todas las páginas son
    `"use client"` + `useEffect` + `fetch`. Migrarlas a RSC (con islas cliente
    para la interacción) quita las cascadas de spinners y los ~21 warnings de
-   `set-state-in-effect`. Es el refactor más grande y con más riesgo; conviene
-   hacerlo **página por página**, no de golpe. En una app mono-usuario que ya
-   funciona, es polish de rendimiento, no bloqueante.
+   `set-state-in-effect`. Es el refactor más grande y con más riesgo; se hace
+   **página por página**, no de golpe.
+   - ✅ `/subscriptions` (2026-07-24) — primera página, la de menor riesgo
+     (una sola lectura, sin formularios; el toggle "mostrar inactivos" pasó a
+     ser un `<Link>` por query-string). Lógica compartida extraída a
+     `lib/recurring-data.ts` (mismo patrón que `forecast-data.ts`/
+     `insights-data.ts`). Spinner compartido en `components/PageSpinner.tsx`
+     + `loading.tsx` para el fallback de Suspense.
+   - Pendientes, de menor a mayor riesgo: `/calendar` (navegación por
+     query-string + una isla cliente para el día seleccionado), `/insights`,
+     `/net-worth`, `/dashboard`; luego las de CRUD inline (`/household`,
+     `/budgets`, `/rules`) al final.
+   En una app mono-usuario que ya funciona, es polish de rendimiento, no
+   bloqueante.
 
 ---
 
