@@ -108,8 +108,15 @@ Hecho (2026-07-24):
      `Promise.all` server-side. Las 3 cards perdieron `"use client"` del
      todo (no tenían ninguna interacción propia). También `force-dynamic`
      (mismo motivo que `/net-worth`).
-   - Quedan las de CRUD inline (`/household`, `/budgets`, `/rules`) — las
-     de mayor riesgo, al final a propósito.
+   - ✅ `/household` (2026-07-25) — sexta página, primera de las tres de CRUD
+     inline ("Opérations"). El filtro grupo/categoría sigue siendo 100%
+     en memoria sobre el array ya traído (nunca dispara un fetch nuevo);
+     `HouseholdClient.tsx` recibe `initialGroup`/`initialCategory` de la URL
+     solo como valor semilla, igual que hacía el `didBootstrap` ref de la
+     versión anterior. Alta/borrado siguen pegándole a la misma
+     `/api/transactions` de siempre, ahora con `router.refresh()` en vez de
+     re-fetch local.
+   - Quedan `/budgets`, `/rules` — las de mayor riesgo, al final a propósito.
    En una app mono-usuario que ya funciona, es polish de rendimiento, no
    bloqueante.
 
