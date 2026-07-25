@@ -89,8 +89,17 @@ Hecho (2026-07-24):
      de filtro por `router.push()` (`InsightsFilters.tsx`) para el `<select>`/
      `<input>` de mes-año, distinto de `<Link>` porque un `onChange` no es un
      clic.
-   - Pendientes, de menor a mayor riesgo: `/net-worth`, `/dashboard`; luego
-     las de CRUD inline (`/household`, `/budgets`, `/rules`) al final.
+   - ✅ `/net-worth` (2026-07-25) — cuarta página, primera con mutaciones
+     reales (agregar/borrar snapshot) y con un gráfico Recharts (necesita
+     cliente por el DOM). `NetWorthClient.tsx` cambia el viejo
+     `fetchData()` tras cada mutación por `router.refresh()` — el server
+     vuelve a renderizar con datos frescos, sin estado local duplicado.
+     Encontrado en verificación: sin `searchParams` no había señal de
+     per-request para Next, así que la página se pre-renderizaba en build
+     (`○`) y habría servido una foto congelada; `export const dynamic =
+     "force-dynamic"` lo corrigió (confirmado `○` → `ƒ` en el build).
+   - Pendientes, de menor a mayor riesgo: `/dashboard`; luego las de CRUD
+     inline (`/household`, `/budgets`, `/rules`) al final.
    En una app mono-usuario que ya funciona, es polish de rendimiento, no
    bloqueante.
 
