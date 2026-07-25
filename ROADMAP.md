@@ -98,8 +98,18 @@ Hecho (2026-07-24):
      per-request para Next, así que la página se pre-renderizaba en build
      (`○`) y habría servido una foto congelada; `export const dynamic =
      "force-dynamic"` lo corrigió (confirmado `○` → `ƒ` en el build).
-   - Pendientes, de menor a mayor riesgo: `/dashboard`; luego las de CRUD
-     inline (`/household`, `/budgets`, `/rules`) al final.
+   - ✅ `/dashboard` (2026-07-25) — quinta y más grande: la página más tres
+     cards (`BudgetProgressCard`, `AccountBreakdownCard`, `ForecastCard`) que
+     cada una hacía su propio fetch — la cascada de spinners literal que
+     motivó este ítem del roadmap. Nuevo `lib/dashboard-data.ts` extrae 5
+     funciones (`getLatestMonth`/`getMonthSummary`/`getMonthlyTrends`/
+     `getBudgetReport`/`getAccountBreakdown`) de sus rutas API respectivas
+     (mismo patrón que `forecast-data.ts`), ahora todo se resuelve en un solo
+     `Promise.all` server-side. Las 3 cards perdieron `"use client"` del
+     todo (no tenían ninguna interacción propia). También `force-dynamic`
+     (mismo motivo que `/net-worth`).
+   - Quedan las de CRUD inline (`/household`, `/budgets`, `/rules`) — las
+     de mayor riesgo, al final a propósito.
    En una app mono-usuario que ya funciona, es polish de rendimiento, no
    bloqueante.
 
