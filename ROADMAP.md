@@ -78,10 +78,14 @@ Hecho (2026-07-24):
      `lib/recurring-data.ts` (mismo patrón que `forecast-data.ts`/
      `insights-data.ts`). Spinner compartido en `components/PageSpinner.tsx`
      + `loading.tsx` para el fallback de Suspense.
-   - Pendientes, de menor a mayor riesgo: `/calendar` (navegación por
-     query-string + una isla cliente para el día seleccionado), `/insights`,
-     `/net-worth`, `/dashboard`; luego las de CRUD inline (`/household`,
-     `/budgets`, `/rules`) al final.
+   - ✅ `/calendar` (2026-07-25) — segunda página; introduce el patrón que
+     faltaba: RSC shell (navegación de mes por `<Link>`, `searchParams`) +
+     **isla cliente** (`CalendarClient.tsx`) para la selección de día, que
+     necesita estado real pero cero fetch extra (las transacciones del mes ya
+     llegan por props).
+   - Pendientes, de menor a mayor riesgo: `/insights`, `/net-worth`,
+     `/dashboard`; luego las de CRUD inline (`/household`, `/budgets`,
+     `/rules`) al final.
    En una app mono-usuario que ya funciona, es polish de rendimiento, no
    bloqueante.
 
