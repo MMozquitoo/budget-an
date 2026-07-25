@@ -83,9 +83,14 @@ Hecho (2026-07-24):
      **isla cliente** (`CalendarClient.tsx`) para la selección de día, que
      necesita estado real pero cero fetch extra (las transacciones del mes ya
      llegan por props).
-   - Pendientes, de menor a mayor riesgo: `/insights`, `/net-worth`,
-     `/dashboard`; luego las de CRUD inline (`/household`, `/budgets`,
-     `/rules`) al final.
+   - ✅ `/insights` (2026-07-25) — tercera página, la más simple (puro
+     display, sin estado por ítem); usa `computeInsights()` ya existente en
+     `lib/insights-data.ts`, sin extraer nada nuevo. Introduce el sub-patrón
+     de filtro por `router.push()` (`InsightsFilters.tsx`) para el `<select>`/
+     `<input>` de mes-año, distinto de `<Link>` porque un `onChange` no es un
+     clic.
+   - Pendientes, de menor a mayor riesgo: `/net-worth`, `/dashboard`; luego
+     las de CRUD inline (`/household`, `/budgets`, `/rules`) al final.
    En una app mono-usuario que ya funciona, es polish de rendimiento, no
    bloqueante.
 
