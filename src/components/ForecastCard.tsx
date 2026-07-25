@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { TrendingUp, AlertTriangle } from "lucide-react";
 
@@ -24,19 +21,8 @@ function fmtKey(k: string) {
 }
 
 /** Forward cash-flow projection for the dashboard. */
-export default function ForecastCard() {
-  const [data, setData] = useState<Forecast | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/forecast?horizon=6")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading || !data || data.points.length === 0) return null;
+export default function ForecastCard({ data }: { data: Forecast | null }) {
+  if (!data || data.points.length === 0) return null;
 
   const end = data.points[data.points.length - 1];
   const max = Math.max(...data.points.map((x) => Math.abs(x.projected)), 1);

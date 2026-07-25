@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Wallet, ChevronRight } from "lucide-react";
 import { formatCurrency, cn, CATEGORY_LABELS } from "@/lib/utils";
@@ -30,27 +27,8 @@ const BAR: Record<string, string> = {
 };
 
 /** Compact budget progress for the dashboard — links out to the full /budgets page. */
-export default function BudgetProgressCard({
-  month,
-  year,
-}: {
-  month: number | null;
-  year: number | null;
-}) {
-  const [report, setReport] = useState<Report | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (month === null || year === null) return;
-    setLoading(true);
-    fetch(`/api/budgets?month=${month}&year=${year}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setReport)
-      .catch(() => setReport(null))
-      .finally(() => setLoading(false));
-  }, [month, year]);
-
-  if (loading || !report) return null;
+export default function BudgetProgressCard({ report }: { report: Report | null }) {
+  if (!report) return null;
 
   const top = [...report.lines].sort((a, b) => b.pct - a.pct).slice(0, 5);
 

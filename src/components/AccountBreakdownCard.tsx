@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { CreditCard } from "lucide-react";
 
@@ -23,27 +20,8 @@ const COLORS = [
 ];
 
 /** Per-account spend for the dashboard — only shown when there is more than one account. */
-export default function AccountBreakdownCard({
-  month,
-  year,
-}: {
-  month: number | null;
-  year: number | null;
-}) {
-  const [accounts, setAccounts] = useState<Account[] | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (month === null || year === null) return;
-    setLoading(true);
-    fetch(`/api/accounts?month=${month}&year=${year}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setAccounts(d?.accounts ?? null))
-      .catch(() => setAccounts(null))
-      .finally(() => setLoading(false));
-  }, [month, year]);
-
-  if (loading || !accounts || accounts.length <= 1) return null;
+export default function AccountBreakdownCard({ accounts }: { accounts: Account[] | null }) {
+  if (!accounts || accounts.length <= 1) return null;
 
   const max = Math.max(...accounts.map((a) => a.outflow), 1);
 

@@ -2,9 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { safe, badRequest, isEnumValue, toFiniteNumber } from "@/lib/api";
 import { TransactionCategory } from "@/generated/prisma/client";
-import { aggregate } from "@/lib/summary";
-import { buildReport } from "@/lib/budgets";
-import { monthRange } from "@/lib/utils";
+import { getBudgetReport } from "@/lib/dashboard-data";
 
 // GET /api/budgets?month=&year= → the month's budgets merged with actual spend.
 export const GET = safe(async (request: NextRequest) => {
@@ -13,28 +11,7 @@ export const GET = safe(async (request: NextRequest) => {
   const year = toFiniteNumber(sp.get("year"));
   if (!month || !year) return badRequest("month and year required");
 
-  const [budgets, transactions] = await Promise.all([
-    prisma.budget.findMany({ where: { month, year }, orderBy: { category: "asc" } }),
-    prisma.personalTransaction.findMany({
-      where: { parentId: null, date: monthRange(year, month) },
-      select: { amount: true, group: true, category: true },
-    }),
-  ]);
-
-  const { byCategory } = aggregate(
-    transactions.map((t) => ({
-      amount: Number(t.amount),
-      group: t.group,
-      category: t.category,
-    }))
-  );
-
-  const report = buildReport(
-    budgets.map((b) => ({ category: b.category, amount: Number(b.amount) })),
-    byCategory
-  );
-
-  return Response.json({ month, year, ...report });
+  return Response.json(await getBudgetReport(month, year));
 });
 
 // POST /api/budgets — upsert one budget or a batch (from the suggestions).
