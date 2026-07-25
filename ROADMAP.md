@@ -33,6 +33,53 @@ Cobertura: **114 tests** sobre la lógica de dinero/import/reglas/insights/rate-
 
 ---
 
+## ⏳ En curso — retomar aquí (2026-07-25)
+
+- **Alertes por email** `M` — decisión tomada: **email**, cadencia **semanal
+  (lunes por la mañana)**. Contenido: reutilizar `computeInsights()`
+  (`lib/insights-data.ts`) tal cual, ya trae recomendaciones + tendencia de
+  ahorro + oportunidad total.
+  - ✅ Integración **Resend** provisionada vía Vercel Marketplace (plan Free,
+    región `us-east-1`), dominio `mail.mallama.co`. `RESEND_API_KEY` /
+    `RESEND_EMAIL_DOMAIN` ya en las env vars de Vercel.
+  - ⏳ **Verificación DNS pendiente** — el DNS de `mallama.co` es de un
+    proveedor externo (no Vercel), así que Vercel no pudo auto-agregar los
+    registros. Se generaron y se le pasaron a Adrien en un `.txt`
+    (3 registros: TXT DKIM en `resend._domainkey.mail`, MX + TXT SPF en
+    `send.mail` — apuntando a `amazonses.com`). Falta que los agregue en su
+    proveedor DNS real y confirmar el estado (`GET
+    https://api.resend.com/domains/720f37b6-0dce-4a88-88c1-7a0f7d35d444` con
+    `RESEND_API_KEY`, o `vercel integration guide resend`).
+  - ⏳ **Falta el email destinatario** de Adrien — sin esto no se puede
+    escribir el `to:` del envío.
+  - ⏳ **Código sin escribir todavía**: `src/app/api/cron/alerts/route.ts`
+    (mismo patrón que `src/app/api/cron/backup/route.ts` — `Bearer
+    $CRON_SECRET`, dejado pasar por el middleware), entrada en `vercel.json`
+    `crons` (`"schedule": "0 8 * * 1"` = lunes 08:00 UTC), plantilla de email
+    (HTML simple, en francés, con las recomendaciones + link a `/insights`),
+    `npm install resend`.
+
+- **Posibles duplicados en `PersonalTransaction`** — auditoría de datos del
+  2026-07-25 encontró 4 pares de transferencias idénticas (misma
+  fecha+monto+descripción, mismo `createdAt` de import) que podrían ser
+  duplicados reales del CSV fuente, o dos transferencias legítimas el mismo
+  día (el dato solo tiene precisión de día, no de hora):
+  - 17/12/2024 — "Adrien Naeem Sg Sent From" €5.000 ×2 (cuenta N26)
+  - 17/12/2024 — "Eric Popov Sent From" €5.000 ×2 (cuenta N26)
+  - 28/03/2025 — "To Adrien Naeem" €5.000 ×2 (cuenta Revolut)
+  - 28/03/2025 — "To Adrien Naeem" €15.000 ×2 (cuenta Revolut)
+
+  Pendiente de que Cristian confirme con Adrien cuáles (si alguna) son
+  duplicado real. No se toca nada sin esa confirmación explícita, par por par.
+
+- **Hueco de noviembre 2025** en las tablas dormidas (`HouseholdExpense`/
+  `BusinessExpense`, no leídas por la app hoy) — documentado, no accionable:
+  la fuente (`/Users/cristian/Downloads/BUDGET/...`, un import de siembra de
+  una sola vez) ya no existe en disco para re-verificar. Solo relevante si se
+  decide activar esas tablas (ver "Suite pro" abajo).
+
+---
+
 ## 🔒 Postura de seguridad (auditoría 2026-07-23)
 
 Hecho:
@@ -54,9 +101,6 @@ Hecho (2026-07-24):
 
 ## ⏸ Parcado — requiere una decisión o cuenta tuya
 
-- **Alertes qui te préviennent** `M` — el motor de recomendaciones ya calcula el
-  contenido; falta **elegir canal** (WhatsApp/Telegram/email) + un cron. Cobra
-  sentido junto al sync bancario.
 - **Sync bancaire automatique** `XL` — abrir cuenta en un agregador europeo
   (GoCardless / Powens) + KYC + claves. La dedup por huella ya está escrita y se
   reutiliza. El de mayor "wow".

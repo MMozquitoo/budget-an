@@ -4,7 +4,8 @@
 
 App de finanzas personales **mono-usuario** (Adrien), **chat-first**, en francés, en €.
 Next 16 (App Router) · Prisma 7 + Neon Postgres · NextAuth v5 · AI SDK 7 (Anthropic) ·
-Tailwind v4 · Recharts · Upstash (rate-limit) · Sentry (gated). Desplegada en Vercel.
+Tailwind v4 · Recharts · Upstash (rate-limit) · Sentry (conectado) · Resend (email,
+en curso). Desplegada en Vercel.
 
 ## Cómo se despliega / se trabaja
 
@@ -36,12 +37,27 @@ Tailwind v4 · Recharts · Upstash (rate-limit) · Sentry (gated). Desplegada en
 - **Rutas API:** envueltas en `safe()` (`lib/api.ts`) → errores Prisma → JSON limpio.
 - **Import incremental:** dedup por huella `(fecha, importe, descripción)`; nunca
   destructivo salvo `--replace --force`. Motor en `lib/import.ts` (compartido CLI + web).
+- **Server Components, no `"use client"` + `useEffect` + `fetch`:** todas las páginas
+  salvo `/` (chat), `/login` e `/import` son Server Components async — leen
+  `searchParams` (o nada) y traen datos con Prisma/`lib/*-data.ts` directo, sin pasar
+  por una ruta HTTP propia. La interacción (formularios, selects, día seleccionado)
+  vive en una isla cliente aparte (`XClient.tsx` o `XFilters.tsx` en la misma carpeta).
+  Navegación de solo-lectura → `<Link href>`; un `onChange` de `<select>` → `router.push()`;
+  después de una mutación (POST/PUT/DELETE) → `router.refresh()`, nunca estado local
+  duplicado. Si la página no lee `searchParams`/cookies, hace falta
+  `export const dynamic = "force-dynamic"` o Next la pre-renderiza una vez en build y
+  sirve una foto congelada (pasó en `/net-worth`, `/dashboard`, `/household`, `/rules`).
+  `components/PageSpinner.tsx` + `loading.tsx` por carpeta = fallback de Suspense.
+- **`lib/*-data.ts`** (`forecast-data`, `insights-data`, `recurring-data`,
+  `dashboard-data`): orquestación async que sí toca Prisma (a diferencia de la lógica
+  pura de abajo), compartida entre rutas API, páginas Server Component y el agente —
+  mismo principio que `aggregate()`, para que nunca den cifras distintas.
 
 ## Mapa
 
-- **Páginas:** `/` chat · `/dashboard` résumé · `/household` opérations · `/budgets` ·
-  `/insights` analyse+reco · `/import` · `/calendar` · `/subscriptions` · `/net-worth` ·
-  `/rules` · `/login`.
+- **Páginas:** `/` chat · `/dashboard` résumé · `/household` opérations · `/budgets`
+  (+ objectifs d'épargne) · `/insights` analyse+reco · `/import` · `/calendar` ·
+  `/subscriptions` · `/net-worth` · `/rules` · `/login`.
 - **Agente** (`src/agent/budget-agent.ts`): lectura (query/summary/trends/subscriptions/
   netWorth/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
   cashflowForecast/getSavingsGoals) + **escritura** (reclassify, createTransaction,
@@ -57,8 +73,16 @@ Tailwind v4 · Recharts · Upstash (rate-limit) · Sentry (gated). Desplegada en
 - **Rate-limit** Upstash Redis (`KV_REST_API_*` o `UPSTASH_*`): login 10/10min,
   chat 60/h por IP. Fallback en memoria si faltan las env vars.
 - **Sesión** 15 días. **`/api/cron/*`** exige `Bearer $CRON_SECRET` en el middleware.
-- **Backup** diario a Vercel Blob privado (cron, `CRON_SECRET`).
-- **Sentry** cableado en `instrumentation(.client).ts`, se activa con `SENTRY_DSN` /
-  `NEXT_PUBLIC_SENTRY_DSN`.
+- **Backup** diario a Vercel Blob privado (cron, `CRON_SECRET`) — store
+  `budget-an-backups`, tiene que estar **conectado al proyecto** en Storage
+  (Vercel) para que el cron pueda escribir; si no, falla en silencio salvo que
+  se revisen los logs.
+- **Sentry** conectado (integración nativa de Vercel Marketplace, plan Developer
+  $0/mes). `instrumentation(.client).ts` usa `NEXT_PUBLIC_SENTRY_DSN` (la
+  integración no provisiona `SENTRY_DSN` suelto; el server cae a la misma var,
+  el DSN no es secreto).
+- **Resend** (email) conectado vía Vercel Marketplace, dominio `mail.mallama.co`,
+  plan Free. `RESEND_API_KEY`/`RESEND_EMAIL_DOMAIN` en las env vars. Verificación
+  DNS y el cron de alertas semanales quedaron **en curso** — ver ROADMAP.
 
 Estado y plan: **ROADMAP.md**.
