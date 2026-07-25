@@ -116,7 +116,19 @@ Hecho (2026-07-24):
      versión anterior. Alta/borrado siguen pegándole a la misma
      `/api/transactions` de siempre, ahora con `router.refresh()` en vez de
      re-fetch local.
-   - Quedan `/budgets`, `/rules` — las de mayor riesgo, al final a propósito.
+   - ✅ `/budgets` (2026-07-25) — séptima página. Reutiliza `getBudgetReport()`
+     tal cual (ya compartida con `/dashboard`), sin lib nueva. A diferencia
+     de `/household`/`/dashboard`, por defecto usa el **mes calendario
+     actual** (no `getLatestMonth()`) — es la pregunta correcta para
+     "Budgets": dónde estoy parado hoy, no cuál es mi última transacción.
+     Edición inline, alta, borrado, "Pré-remplir" y "Copier le mois
+     précédent" migrados a `router.refresh()`. `SavingsGoalsSection` se dejó
+     tal cual (CRUD propio grande, fuera de alcance). La auditoría de
+     seguridad encontró un bug real (no de seguridad): `sp.month ?
+     Number(sp.month) : fallback` evaluaba el string en vez del número, así
+     que `?month=abc` producía `NaN` y reventaba la página sin capturar
+     (no hay `error.tsx` en la app) — corregido antes de mergear.
+   - Queda `/rules` — la última, la de mayor riesgo, al final a propósito.
    En una app mono-usuario que ya funciona, es polish de rendimiento, no
    bloqueante.
 
