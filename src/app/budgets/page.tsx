@@ -13,8 +13,10 @@ export default async function BudgetsPage({
 }) {
   const sp = await searchParams;
   const now = new Date();
-  const month = sp.month ? Number(sp.month) : now.getMonth() + 1;
-  const year = sp.year ? Number(sp.year) : now.getFullYear();
+  const parsedMonth = sp.month ? Number(sp.month) : NaN;
+  const parsedYear = sp.year ? Number(sp.year) : NaN;
+  const month = Number.isFinite(parsedMonth) ? parsedMonth : now.getMonth() + 1;
+  const year = Number.isFinite(parsedYear) ? parsedYear : now.getFullYear();
 
   const report = await getBudgetReport(month, year);
 
