@@ -1,7 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -15,9 +12,6 @@ import {
 } from "lucide-react";
 import {
   formatCurrency,
-  getCurrentMonth,
-  getCurrentYear,
-  getMonthName,
   cn,
   GROUP_LABELS,
   GROUP_COLORS,
@@ -29,35 +23,21 @@ import { IncomeVsExpensesChart, GroupTrendChart } from "@/components/TrendChart"
 import BudgetProgressCard from "@/components/BudgetProgressCard";
 import AccountBreakdownCard from "@/components/AccountBreakdownCard";
 import ForecastCard from "@/components/ForecastCard";
+import DashboardFilters from "./DashboardFilters";
+import {
+  getLatestMonth,
+  getMonthSummary,
+  getMonthlyTrends,
+  getBudgetReport,
+  getAccountBreakdown,
+} from "@/lib/dashboard-data";
+import { computeForecast } from "@/lib/forecast-data";
 
-interface SummaryData {
-  month: number;
-  year: number;
-  totalIncome: number;
-  totalFixedExpense: number;
-  totalVariableExpense: number;
-  totalSavings: number;
-  totalDebt: number;
-  totalUnexpected: number;
-  totalExpenses: number;
-  totalOutflow: number;
-  balance: number;
-  savingsRate: number;
-  expenseRate: number;
-  prevIncome: number;
-  prevExpenses: number;
-  byGroup: Record<string, number>;
-  byCategory: Record<string, number>;
-  transactionCount: number;
-}
-
-/** One month of /api/transactions/trends. */
-interface MonthTrend {
-  year: number;
-  month: number;
-  byGroup: Record<string, number>;
-  byCategory: Record<string, number>;
-}
+// month/year are optional in the URL (default to the latest month with data),
+// so nothing here forces dynamic rendering on its own — without this, Next
+// would prerender the dashboard once at build time (same issue caught on
+// /net-worth).
+export const dynamic = "force-dynamic";
 
 const GROUP_ICONS: Record<string, typeof Wallet> = {
   INCOME: DollarSign,
@@ -87,75 +67,36 @@ function deltaIcon(current: number, previous: number) {
   );
 }
 
-export default function Dashboard() {
-  const router = useRouter();
-  const [data, setData] = useState<SummaryData | null>(null);
-  const [trends, setTrends] = useState<MonthTrend[] | null>(null);
-  const [month, setMonth] = useState<number | null>(null);
-  const [year, setYear] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string; year?: string }>;
+}) {
+  const sp = await searchParams;
+  let month = sp.month ? Number(sp.month) : null;
+  let year = sp.year ? Number(sp.year) : null;
+  if (!month || !year) {
+    const latest = await getLatestMonth();
+    month = latest.month;
+    year = latest.year;
+  }
 
-  const goToMovimientos = (group?: string, category?: string) => {
+  const [data, trends, budgetReport, accountData, forecast] = await Promise.all([
+    getMonthSummary(month, year),
+    getMonthlyTrends(8),
+    getBudgetReport(month, year),
+    getAccountBreakdown(month, year),
+    computeForecast(6, 6),
+  ]);
+
+  const movimientosHref = (group?: string, category?: string) => {
     const params = new URLSearchParams();
-    if (month) params.set("month", String(month));
-    if (year) params.set("year", String(year));
+    params.set("month", String(month));
+    params.set("year", String(year));
     if (group) params.set("group", group);
     if (category) params.set("category", category);
-    router.push(`/household?${params.toString()}`);
+    return `/household?${params.toString()}`;
   };
-
-  useEffect(() => {
-    if (month === null || year === null) {
-      fetch("/api/transactions/latest")
-        .then((r) => r.json())
-        .then((d) => {
-          setMonth(d.month);
-          setYear(d.year);
-        })
-        .catch(() => {
-          setMonth(getCurrentMonth());
-          setYear(getCurrentYear());
-        });
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      fetch(`/api/transactions/summary?month=${month}&year=${year}`).then((r) => {
-        if (!r.ok) throw new Error("API error");
-        return r.json();
-      }),
-      fetch(`/api/transactions/trends?months=8`).then((r) => r.ok ? r.json() : []),
-    ])
-      .then(([summaryData, trendsData]) => {
-        setData(summaryData);
-        setTrends(trendsData);
-      })
-      .catch(() => setError("Impossible de se connecter à la base de données."))
-      .finally(() => setLoading(false));
-  }, [month, year]);
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-6 py-20">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center max-w-lg">
-          <h2 className="text-lg font-semibold text-amber-800 mb-2">Hors connexion</h2>
-          <p className="text-sm text-amber-700">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) return null;
 
   const balanceColor = data.balance >= 0 ? "text-emerald-600" : "text-red-600";
   const balanceBg = data.balance >= 0 ? "bg-emerald-50" : "bg-red-50";
@@ -170,33 +111,7 @@ export default function Dashboard() {
             Résumé financier personnel
           </p>
         </div>
-        <div className="flex gap-2">
-          <select
-            value={month ?? getCurrentMonth()}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {getMonthName(i + 1)}
-              </option>
-            ))}
-          </select>
-          <select
-            value={year ?? getCurrentYear()}
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            {Array.from({ length: 5 }, (_, i) => {
-              const y = getCurrentYear() - 2 + i;
-              return (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              );
-            })}
-          </select>
-        </div>
+        <DashboardFilters month={month} year={year} />
       </div>
 
       {/* Top KPIs */}
@@ -270,11 +185,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <BudgetProgressCard month={month} year={year} />
+      <BudgetProgressCard report={budgetReport} />
 
-      <AccountBreakdownCard month={month} year={year} />
+      <AccountBreakdownCard accounts={accountData.accounts} />
 
-      <ForecastCard />
+      <ForecastCard data={forecast} />
 
       {/* Group breakdown cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -290,8 +205,8 @@ export default function Dashboard() {
               key={group}
               className={cn("rounded-xl border bg-white p-6 shadow-sm", colors.border)}
             >
-              <button
-                onClick={() => goToMovimientos(group)}
+              <Link
+                href={movimientosHref(group)}
                 className="flex w-full items-center justify-between mb-4 group/header"
               >
                 <div className="flex items-center gap-2">
@@ -306,7 +221,7 @@ export default function Dashboard() {
                 <span className="text-lg font-bold text-gray-900">
                   {formatCurrency(total)}
                 </span>
-              </button>
+              </Link>
 
               {group !== "INCOME" && data.totalIncome > 0 && (
                 <div className="mb-4">
@@ -328,9 +243,9 @@ export default function Dashboard() {
                   if (catAmt === 0) return null;
                   const catPct = total > 0 ? (catAmt / total) * 100 : 0;
                   return (
-                    <button
+                    <Link
                       key={cat}
-                      onClick={() => goToMovimientos(group, cat)}
+                      href={movimientosHref(group, cat)}
                       className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 transition-colors group/cat"
                     >
                       <div className="flex items-center gap-2">
@@ -348,7 +263,7 @@ export default function Dashboard() {
                         </span>
                         <ChevronRight className="h-3 w-3 text-gray-200 group-hover/cat:text-indigo-500 transition-colors" />
                       </div>
-                    </button>
+                    </Link>
                   );
                 })}
                 {categories.every((cat) => !(data.byCategory[cat])) && (
