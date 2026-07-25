@@ -27,6 +27,7 @@ solo *alerting*, parcado) — más la autonomía y la memoria.
 | **Import depuis le navigateur** | Subir CSV → aperçu (nuevas/duplicadas/no mapeadas) → confirmar. Incremental, no destructivo. Motor compartido con el CLI. |
 | **Chat UX** | Markdown real (react-markdown), input multilínea (Enter envía / Shift+Enter salto). |
 | **Objectifs d'épargne avec date** | Montant cible + fecha límite, seguimiento acumulado (no mensual) derivado de las transacciones de ahorro (categoría elegida o todo el grupo). Sección en `/budgets` + herramientas de chat. |
+| **Server Components (RSC)** | Las 8 páginas (`/subscriptions`, `/calendar`, `/insights`, `/net-worth`, `/dashboard`, `/household`, `/budgets`, `/rules`) migradas de `"use client"` + `useEffect`/`fetch` a Server Components, con islas cliente (`router.push`/`router.refresh`) solo donde hace falta interacción real. Sin cascadas de spinners. Nuevos módulos compartidos `lib/recurring-data.ts` y `lib/dashboard-data.ts`. |
 
 Cobertura: **114 tests** sobre la lógica de dinero/import/reglas/insights/rate-limit/objectifs.
 
@@ -67,70 +68,15 @@ Hecho (2026-07-24):
 
 ## 🛠️ Técnico que queda (sin dependencias externas)
 
-1. **Migrar a Server Components** `L`–`XL` — todas las páginas son
-   `"use client"` + `useEffect` + `fetch`. Migrarlas a RSC (con islas cliente
-   para la interacción) quita las cascadas de spinners y los ~21 warnings de
-   `set-state-in-effect`. Es el refactor más grande y con más riesgo; se hace
-   **página por página**, no de golpe.
-   - ✅ `/subscriptions` (2026-07-24) — primera página, la de menor riesgo
-     (una sola lectura, sin formularios; el toggle "mostrar inactivos" pasó a
-     ser un `<Link>` por query-string). Lógica compartida extraída a
-     `lib/recurring-data.ts` (mismo patrón que `forecast-data.ts`/
-     `insights-data.ts`). Spinner compartido en `components/PageSpinner.tsx`
-     + `loading.tsx` para el fallback de Suspense.
-   - ✅ `/calendar` (2026-07-25) — segunda página; introduce el patrón que
-     faltaba: RSC shell (navegación de mes por `<Link>`, `searchParams`) +
-     **isla cliente** (`CalendarClient.tsx`) para la selección de día, que
-     necesita estado real pero cero fetch extra (las transacciones del mes ya
-     llegan por props).
-   - ✅ `/insights` (2026-07-25) — tercera página, la más simple (puro
-     display, sin estado por ítem); usa `computeInsights()` ya existente en
-     `lib/insights-data.ts`, sin extraer nada nuevo. Introduce el sub-patrón
-     de filtro por `router.push()` (`InsightsFilters.tsx`) para el `<select>`/
-     `<input>` de mes-año, distinto de `<Link>` porque un `onChange` no es un
-     clic.
-   - ✅ `/net-worth` (2026-07-25) — cuarta página, primera con mutaciones
-     reales (agregar/borrar snapshot) y con un gráfico Recharts (necesita
-     cliente por el DOM). `NetWorthClient.tsx` cambia el viejo
-     `fetchData()` tras cada mutación por `router.refresh()` — el server
-     vuelve a renderizar con datos frescos, sin estado local duplicado.
-     Encontrado en verificación: sin `searchParams` no había señal de
-     per-request para Next, así que la página se pre-renderizaba en build
-     (`○`) y habría servido una foto congelada; `export const dynamic =
-     "force-dynamic"` lo corrigió (confirmado `○` → `ƒ` en el build).
-   - ✅ `/dashboard` (2026-07-25) — quinta y más grande: la página más tres
-     cards (`BudgetProgressCard`, `AccountBreakdownCard`, `ForecastCard`) que
-     cada una hacía su propio fetch — la cascada de spinners literal que
-     motivó este ítem del roadmap. Nuevo `lib/dashboard-data.ts` extrae 5
-     funciones (`getLatestMonth`/`getMonthSummary`/`getMonthlyTrends`/
-     `getBudgetReport`/`getAccountBreakdown`) de sus rutas API respectivas
-     (mismo patrón que `forecast-data.ts`), ahora todo se resuelve en un solo
-     `Promise.all` server-side. Las 3 cards perdieron `"use client"` del
-     todo (no tenían ninguna interacción propia). También `force-dynamic`
-     (mismo motivo que `/net-worth`).
-   - ✅ `/household` (2026-07-25) — sexta página, primera de las tres de CRUD
-     inline ("Opérations"). El filtro grupo/categoría sigue siendo 100%
-     en memoria sobre el array ya traído (nunca dispara un fetch nuevo);
-     `HouseholdClient.tsx` recibe `initialGroup`/`initialCategory` de la URL
-     solo como valor semilla, igual que hacía el `didBootstrap` ref de la
-     versión anterior. Alta/borrado siguen pegándole a la misma
-     `/api/transactions` de siempre, ahora con `router.refresh()` en vez de
-     re-fetch local.
-   - ✅ `/budgets` (2026-07-25) — séptima página. Reutiliza `getBudgetReport()`
-     tal cual (ya compartida con `/dashboard`), sin lib nueva. A diferencia
-     de `/household`/`/dashboard`, por defecto usa el **mes calendario
-     actual** (no `getLatestMonth()`) — es la pregunta correcta para
-     "Budgets": dónde estoy parado hoy, no cuál es mi última transacción.
-     Edición inline, alta, borrado, "Pré-remplir" y "Copier le mois
-     précédent" migrados a `router.refresh()`. `SavingsGoalsSection` se dejó
-     tal cual (CRUD propio grande, fuera de alcance). La auditoría de
-     seguridad encontró un bug real (no de seguridad): `sp.month ?
-     Number(sp.month) : fallback` evaluaba el string en vez del número, así
-     que `?month=abc` producía `NaN` y reventaba la página sin capturar
-     (no hay `error.tsx` en la app) — corregido antes de mergear.
-   - Queda `/rules` — la última, la de mayor riesgo, al final a propósito.
-   En una app mono-usuario que ya funciona, es polish de rendimiento, no
-   bloqueante.
+Ninguno por ahora — el único pendiente (migración a Server Components) se
+completó el 2026-07-25. Ver la fila **Server Components (RSC)** en
+"Entregado y en producción" arriba para el detalle página por página
+(orden: `/subscriptions` → `/calendar` → `/insights` → `/net-worth` →
+`/dashboard` → `/household` → `/budgets` → `/rules`, cada una auditada antes
+de mergear). Único hallazgo real de toda la serie: un bug (no de seguridad)
+en `/budgets` — `sp.month ? Number(sp.month) : fallback` evaluaba el string
+en vez del número, así que `?month=abc` producía `NaN` y reventaba la página
+sin capturar (no hay `error.tsx` en la app) — corregido antes de mergear.
 
 ---
 
@@ -140,6 +86,6 @@ Hecho (2026-07-24):
 |---|--------|----------|---------|
 | ~~1~~ | ~~Conectar Sentry~~ | `S` | ✅ Hecho 2026-07-24 |
 | ~~2~~ | ~~Objectifs d'épargne con fecha~~ | `M` | ✅ Hecho 2026-07-24 |
-| 3 | Server Components, página por página | `L`–`XL` | Rendimiento en móvil; hacerlo incremental |
+| ~~3~~ | ~~Server Components, página por página~~ | `L`–`XL` | ✅ Hecho 2026-07-25 (8/8 páginas) |
 | 4 | Decidir canal de **Alertes** y activarlo | `M` | El peldaño 4 de la escalera; el motor ya está |
 | 5 | (Estratégico) Sync bancario y/o Suite pro | `XL` | Requieren tu decisión/cuenta |
