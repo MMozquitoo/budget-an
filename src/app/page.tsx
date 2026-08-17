@@ -29,7 +29,7 @@ const SUGGESTIONS = [
 ];
 
 export default function ChatPage() {
-  const { messages, status, sendMessage, setMessages } = useChat();
+  const { messages, status, error, clearError, sendMessage, setMessages } = useChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -40,18 +40,37 @@ export default function ChatPage() {
   const [showHistory, setShowHistory] = useState(false);
   const savedSigRef = useRef("");
 
+  // Only auto-scroll while the user is already at the bottom — otherwise a
+  // streaming response yanks them back down every time it re-renders, which
+  // made it impossible to scroll up and read earlier messages mid-response.
+  const isNearBottomRef = useRef(true);
+
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
 
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  }, []);
+
   useEffect(() => {
-    scrollToBottom();
+    if (isNearBottomRef.current) scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  // Re-focus the input as soon as it re-enables (response finished), so the
+  // next question can be typed immediately without clicking back into it.
+  useEffect(() => {
+    if (status === "ready") inputRef.current?.focus();
+  }, [status]);
 
   const submit = () => {
     if (!input.trim() || status !== "ready") return;
+    isNearBottomRef.current = true; // sending always snaps back to the new exchange
+    clearError();
     sendMessage({ text: input });
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
@@ -136,6 +155,7 @@ export default function ChatPage() {
     setMessages([]);
     setConversationId(null);
     savedSigRef.current = "";
+    clearError();
     if (typeof window !== "undefined") localStorage.removeItem("currentConversation");
     setShowHistory(false);
   };
@@ -204,6 +224,7 @@ export default function ChatPage() {
       {/* Messages area */}
       <div
         ref={scrollRef}
+        onScroll={handleScroll}
         className="flex-1 overflow-y-auto overscroll-contain"
       >
         {messages.length === 0 ? (
@@ -310,6 +331,21 @@ export default function ChatPage() {
 
       {/* Input bar - fixed at bottom */}
       <div className="border-t border-gray-100 bg-white px-3 pb-2 pt-2 md:px-4 md:pb-4 md:pt-3">
+        {error && (
+          <div className="mx-auto mb-2 flex max-w-2xl items-center justify-between gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">
+            <span>
+              {error.message.includes("429") || error.message.toLowerCase().includes("trop de requ")
+                ? "Trop de messages envoyés d'un coup — attends un instant et réessaie."
+                : "Une erreur est survenue. Réessaie."}
+            </span>
+            <button
+              onClick={clearError}
+              className="shrink-0 font-medium text-red-800 hover:underline"
+            >
+              Fermer
+            </button>
+          </div>
+        )}
         {messages.length > 0 && (
           <div className="mb-2 flex justify-center">
             <button

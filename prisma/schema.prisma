@@ -245,6 +245,8 @@ enum TransactionCategory {
   INSURANCE
   CREDIT_PAYMENT
   EDUCATION_FIXED
+  FAMILY_SUPPORT_CLAUDIA
+  FAMILY_SUPPORT_FATHER
 
   // Gastos variables
   GROCERIES
@@ -257,6 +259,7 @@ enum TransactionCategory {
   ENTERTAINMENT
   GIFTS
   REPAIRS
+  VACATION
 
   // Ahorro
   GENERAL_SAVINGS
