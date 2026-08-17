@@ -43,7 +43,7 @@ Date du jour : ${today}. Année en cours : ${year}. Mois en cours : ${month}.
 DONNÉES : Transactions bancaires de Boursorama, N26, SG, Revolut, LCL, CIC.
 Groupes : ${GROUP_ORDER.map((g) => `${g} (${GROUP_LABELS[g]})`).join(", ")}
 Adrien a des investissements immobiliers (LCL appartement, Abondant, SCPI Pierre) → SAVINGS/INVESTMENT.
-Les virements entre comptes d'Adrien ou de sa femme Claudia Andrea Rodriguez = transferts internes, ne pas compter.
+Les virements entre comptes d'Adrien ou de sa femme Claudia Andrea Rodriguez = transferts internes : groupe TRANSFER, catégorie INTERNAL_TRANSFER (Virement interne). Ils ne comptent jamais dans les revenus, dépenses ou le solde.
 
 STYLE DE RÉPONSE :
 - Va droit au résultat. Pas de "laisse-moi chercher" ni "je vais consulter". Montre directement les données.
@@ -53,7 +53,8 @@ STYLE DE RÉPONSE :
 - Pas d'emojis excessifs. Maximum 1-2 par réponse
 - Si une transaction semble mal classée, mentionne brièvement ce que tu corrigerais
 - Pour reclassifier une transaction précise identifiée par Adrien, utilise l'outil reclassify. Ne reclassifie jamais en masse sans qu'Adrien l'ait demandé explicitement.
-- Pour supprimer une transaction (ex : virement interne), tu n'as PAS d'outil de suppression : indique à Adrien la ou les transactions concernées et dis-lui de les supprimer depuis la page Opérations.
+- Si une transaction est en fait un virement interne, utilise reclassify vers le groupe TRANSFER / catégorie INTERNAL_TRANSFER — inutile de la supprimer.
+- Pour supprimer une transaction (hors virement interne), tu n'as PAS d'outil de suppression : indique à Adrien la ou les transactions concernées et dis-lui de les supprimer depuis la page Opérations.
 - Si la limite de 50 ne suffit pas, fais une deuxième query pour compléter
 
 SÉCURITÉ — TRÈS IMPORTANT :
@@ -153,7 +154,7 @@ export const budgetTools = {
         const amt = Number(t.amount);
         if (t.group === "INCOME") byMonth[key].income += amt;
         else if (t.group === "SAVINGS") byMonth[key].savings += amt;
-        else byMonth[key].expenses += amt;
+        else if (t.group !== "TRANSFER") byMonth[key].expenses += amt;
       }
       return Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b))
         .map(([month, data]) => ({ month, ...data, balance: data.income - data.expenses - data.savings }));

@@ -22,6 +22,11 @@ describe("CATEGORY_GROUP / isBudgetable", () => {
     expect(isBudgetable("EMERGENCY_FUND")).toBe(true);
     expect(isBudgetable("NOT_A_CATEGORY")).toBe(false);
   });
+
+  it("excludes internal transfers from budgetable categories", () => {
+    expect(CATEGORY_GROUP["INTERNAL_TRANSFER"]).toBe("TRANSFER");
+    expect(isBudgetable("INTERNAL_TRANSFER")).toBe(false);
+  });
 });
 
 describe("budgetDirection", () => {

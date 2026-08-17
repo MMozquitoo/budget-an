@@ -67,6 +67,21 @@ describe("aggregate", () => {
     expect(t.balance).toBe(0);
     expect(t.transactionCount).toBe(0);
   });
+
+  it("excludes internal transfers from expenses, outflow and balance", () => {
+    const t = aggregate([
+      tx("INCOME", "SALARY", 3000),
+      tx("VARIABLE_EXPENSE", "GROCERIES", 400),
+      tx("TRANSFER", "INTERNAL_TRANSFER", 1000),
+    ]);
+    expect(t.totalIncome).toBe(3000);
+    expect(t.totalExpenses).toBe(400);
+    expect(t.totalOutflow).toBe(400);
+    expect(t.balance).toBe(2600);
+    // Still visible per-group/category for its own line item.
+    expect(t.byGroup.TRANSFER).toBe(1000);
+    expect(t.byCategory.INTERNAL_TRANSFER).toBe(1000);
+  });
 });
 
 describe("topCategories", () => {

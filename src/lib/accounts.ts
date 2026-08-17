@@ -25,7 +25,9 @@ export interface AccountTotals {
 
 /**
  * Group transactions by their source account. Rows with no parseable account
- * fall under "Autre". Sorted by outflow, largest first.
+ * fall under "Autre". Sorted by outflow, largest first. Internal transfers
+ * count toward `count` but not toward income/outflow — money moving between
+ * Adrien's own accounts is neither.
  */
 export function accountBreakdown(
   transactions: Array<{ notes: string | null; group: string; amount: number }>
@@ -41,7 +43,7 @@ export function accountBreakdown(
     const amt = Number(t.amount);
     if (!Number.isFinite(amt)) continue;
     if (t.group === "INCOME") a.income += amt;
-    else a.outflow += amt;
+    else if (t.group !== "TRANSFER") a.outflow += amt;
     a.count += 1;
   }
   for (const a of map.values()) a.net = a.income - a.outflow;

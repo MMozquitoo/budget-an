@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   ArrowDownRight,
+  ArrowLeftRight,
   Wallet,
   TrendingDown,
   PiggyBank,
@@ -46,6 +47,7 @@ const GROUP_ICONS: Record<string, typeof Wallet> = {
   SAVINGS: PiggyBank,
   DEBT: CreditCard,
   UNEXPECTED: AlertTriangle,
+  TRANSFER: ArrowLeftRight,
 };
 
 function deltaIcon(current: number, previous: number) {
@@ -223,7 +225,7 @@ export default async function Dashboard({
                 </span>
               </Link>
 
-              {group !== "INCOME" && data.totalIncome > 0 && (
+              {group !== "INCOME" && group !== "TRANSFER" && data.totalIncome > 0 && (
                 <div className="mb-4">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>{pct.toFixed(0)}% des revenus</span>

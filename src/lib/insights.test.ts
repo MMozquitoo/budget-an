@@ -39,6 +39,15 @@ describe("categoryMovements", () => {
   it("returns nothing with fewer than two months", () => {
     expect(categoryMovements(series.slice(0, 1))).toEqual([]);
   });
+
+  it("ignores internal transfers", () => {
+    const withTransfer = [
+      point("2026-01", 3000, 500, { SALARY: 3000, GROCERIES: 400, INTERNAL_TRANSFER: 100 }),
+      point("2026-02", 3000, 500, { SALARY: 3000, GROCERIES: 420, INTERNAL_TRANSFER: 900 }),
+    ];
+    const m = categoryMovements(withTransfer);
+    expect(m.some((x) => x.category === "INTERNAL_TRANSFER")).toBe(false);
+  });
 });
 
 describe("savingsTrend", () => {

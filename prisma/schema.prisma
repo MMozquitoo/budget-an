@@ -207,6 +207,7 @@ enum TransactionGroup {
   SAVINGS
   DEBT
   UNEXPECTED
+  TRANSFER
 }
 
 enum TransactionCategory {
@@ -261,6 +262,9 @@ enum TransactionCategory {
   UNEXPECTED_REPAIR
   FINE
   UNPLANNED
+
+  // Virements
+  INTERNAL_TRANSFER
 }
 
 // ──────────────────────────────────────────────

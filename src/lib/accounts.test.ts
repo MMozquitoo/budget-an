@@ -44,4 +44,16 @@ describe("accountBreakdown", () => {
     ]);
     expect(rows[0].account).toBe("B");
   });
+
+  it("does not count internal transfers as income or outflow", () => {
+    const rows = accountBreakdown([
+      tx("Boursorama | X > Y", "INCOME", 2000),
+      tx("Boursorama | X > Y", "TRANSFER", 500),
+      tx("Boursorama | X > Y", "VARIABLE_EXPENSE", 100),
+    ]);
+    const bourso = rows.find((r) => r.account === "Boursorama")!;
+    expect(bourso.income).toBe(2000);
+    expect(bourso.outflow).toBe(100);
+    expect(bourso.count).toBe(3);
+  });
 });

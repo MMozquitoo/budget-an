@@ -45,7 +45,7 @@ export async function computeForecast(
     const amt = Number(t.amount);
     if (t.group === "INCOME") b.income += amt;
     else if (t.group === "SAVINGS") b.savings += amt;
-    else b.expenses += amt;
+    else if (t.group !== "TRANSFER") b.expenses += amt;
   }
   const series = [...buckets.values()];
   const avgNetFlow = averageNetFlow(series);

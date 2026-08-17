@@ -17,10 +17,10 @@ export const CATEGORY_GROUP: Record<string, string> = Object.fromEntries(
   )
 );
 
-/** Categories that can hold a budget — everything except income. */
+/** Categories that can hold a budget — everything except income and transfers. */
 export function isBudgetable(category: string): boolean {
   const group = CATEGORY_GROUP[category];
-  return group !== undefined && group !== "INCOME";
+  return group !== undefined && group !== "INCOME" && group !== "TRANSFER";
 }
 
 export type BudgetDirection = "cap" | "goal";
