@@ -1,4 +1,5 @@
 import { getBudgetReport } from "@/lib/dashboard-data";
+import { getTaxonomy } from "@/lib/taxonomy";
 import BudgetsClient from "./BudgetsClient";
 import SavingsGoalsSection from "./SavingsGoalsSection";
 
@@ -18,12 +19,12 @@ export default async function BudgetsPage({
   const month = Number.isFinite(parsedMonth) ? parsedMonth : now.getMonth() + 1;
   const year = Number.isFinite(parsedYear) ? parsedYear : now.getFullYear();
 
-  const report = await getBudgetReport(month, year);
+  const [report, taxonomy] = await Promise.all([getBudgetReport(month, year), getTaxonomy()]);
 
   return (
     <>
-      <BudgetsClient report={report} month={month} year={year} />
-      <SavingsGoalsSection />
+      <BudgetsClient report={report} month={month} year={year} taxonomy={taxonomy} />
+      <SavingsGoalsSection taxonomy={taxonomy} />
     </>
   );
 }

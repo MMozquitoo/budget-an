@@ -10,13 +10,8 @@ import { buildReport } from "@/lib/budgets";
 import { categoryMovements, savingsTrend, type MonthPoint } from "@/lib/insights";
 import { recommend, totalOpportunity, type SubscriptionLite } from "@/lib/recommend";
 import { detectRecurring } from "@/lib/recurring";
-import {
-  monthRange,
-  monthKeyInZone,
-  monthPartsInZone,
-  shiftMonth,
-  CATEGORY_LABELS,
-} from "@/lib/utils";
+import { getTaxonomy } from "@/lib/taxonomy";
+import { monthRange, monthKeyInZone, monthPartsInZone, shiftMonth } from "@/lib/utils";
 
 export async function computeInsights(
   monthArg?: number | null,
@@ -42,6 +37,11 @@ export async function computeInsights(
   const anchorLt = monthRange(year, month).lt;
   const subStart = shiftMonth(year, month, -17);
 
+  const taxonomy = await getTaxonomy();
+  const nonSpendGroups = taxonomy.groupOrder.filter(
+    (g) => taxonomy.groupBehavior[g] === "income" || taxonomy.groupBehavior[g] === "excluded"
+  );
+
   const [seriesTx, anchorBudgets, subsTx] = await Promise.all([
     prisma.personalTransaction.findMany({
       where: { parentId: null, date: { gte: seriesGte, lt: anchorLt } },
@@ -51,7 +51,7 @@ export async function computeInsights(
     prisma.personalTransaction.findMany({
       where: {
         parentId: null,
-        group: { notIn: ["INCOME", "TRANSFER", "BUSINESS"] },
+        group: { notIn: nonSpendGroups },
         date: { gte: monthRange(subStart.year, subStart.month).gte, lt: anchorLt },
       },
       select: { id: true, date: true, amount: true, group: true, category: true, description: true },
@@ -71,17 +71,20 @@ export async function computeInsights(
     if (!b) continue;
     const amt = Number(t.amount);
     b.byCategory[t.category] = (b.byCategory[t.category] ?? 0) + amt;
-    if (t.group === "INCOME") b.income += amt;
-    else if (t.group === "SAVINGS") b.savings += amt;
-    else if (t.group !== "TRANSFER" && t.group !== "BUSINESS") b.expenses += amt;
+    const behavior = taxonomy.groupBehavior[t.group];
+    if (behavior === "income") b.income += amt;
+    else if (behavior === "savings") b.savings += amt;
+    else if (behavior !== "excluded") b.expenses += amt;
   }
   const series = [...buckets.values()];
   const anchorPoint = series[series.length - 1];
 
   const budgetReport = anchorBudgets.length
     ? buildReport(
-        anchorBudgets.map((b) => ({ category: b.category as string, amount: Number(b.amount) })),
-        anchorPoint?.byCategory ?? {}
+        anchorBudgets.map((b) => ({ category: b.category, amount: Number(b.amount) })),
+        anchorPoint?.byCategory ?? {},
+        taxonomy.categoryGroup,
+        taxonomy.groupBehavior
       )
     : null;
 
@@ -95,14 +98,14 @@ export async function computeInsights(
     priceChange: s.priceChange,
   }));
 
-  const movements = categoryMovements(series);
+  const movements = categoryMovements(series, taxonomy.categoryGroup, taxonomy.groupBehavior);
   const savings = savingsTrend(series);
   const recommendations = recommend({
     budgetReport,
     movements,
     subscriptions,
     savings,
-    labels: CATEGORY_LABELS,
+    labels: taxonomy.categoryLabels,
   });
 
   return {
@@ -110,7 +113,7 @@ export async function computeInsights(
     year,
     months,
     savings,
-    movements: movements.map((m) => ({ ...m, label: CATEGORY_LABELS[m.category] ?? m.category })),
+    movements: movements.map((m) => ({ ...m, label: taxonomy.categoryLabels[m.category] ?? m.category })),
     budget: budgetReport
       ? {
           totalBudget: budgetReport.totalBudget,

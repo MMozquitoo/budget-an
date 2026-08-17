@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { formatCurrency, cn, CATEGORY_LABELS, CATEGORIES_BY_GROUP } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
+import type { Taxonomy } from "@/lib/taxonomy";
 import { PiggyBank, Trash2, Plus } from "lucide-react";
 
 interface SavingsGoalLine {
@@ -29,7 +30,8 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function SavingsGoalsSection() {
+export default function SavingsGoalsSection({ taxonomy }: { taxonomy: Taxonomy }) {
+  const { categoryLabels: CATEGORY_LABELS, categoriesByGroup: CATEGORIES_BY_GROUP } = taxonomy;
   const [goals, setGoals] = useState<SavingsGoalLine[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");

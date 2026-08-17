@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { classify, matchesRule, validateRegex, isCategoryInGroup } from "./rules";
+import {
+  classify as classifyRaw,
+  matchesRule,
+  validateRegex,
+  isCategoryInGroup as isCategoryInGroupRaw,
+} from "./rules";
+import { DEFAULT_CATEGORIES_BY_GROUP } from "./test-taxonomy";
+
+const classify = (rules: Parameters<typeof classifyRaw>[0], fields: Parameters<typeof classifyRaw>[1]) =>
+  classifyRaw(rules, fields, DEFAULT_CATEGORIES_BY_GROUP);
+const isCategoryInGroup = (group: string, category: string) =>
+  isCategoryInGroupRaw(group, category, DEFAULT_CATEGORIES_BY_GROUP);
 
 const rule = (over: Partial<Parameters<typeof matchesRule>[0]> = {}) => ({
   matchValue: "netflix",

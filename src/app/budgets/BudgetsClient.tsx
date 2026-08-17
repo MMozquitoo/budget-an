@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatCurrency, cn, CATEGORY_LABELS, CATEGORIES_BY_GROUP, GROUP_LABELS, GROUP_ORDER } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
+import type { Taxonomy } from "@/lib/taxonomy";
 import { Wallet, Sparkles, Copy, Trash2, Plus, AlertTriangle } from "lucide-react";
 
 interface BudgetLine {
@@ -31,11 +32,6 @@ const MONTH_NAMES = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
-// Budgetable categories = everything except income, in canonical group order.
-const BUDGETABLE = GROUP_ORDER.filter((g) => g !== "INCOME").flatMap((g) =>
-  (CATEGORIES_BY_GROUP[g] || []).map((c) => ({ category: c, group: g }))
-);
-
 const HEALTH: Record<BudgetLine["health"], { bar: string; text: string; label: string }> = {
   ok:      { bar: "bg-emerald-500", text: "text-emerald-600", label: "OK" },
   warning: { bar: "bg-amber-500",   text: "text-amber-600",   label: "Proche" },
@@ -49,16 +45,28 @@ export default function BudgetsClient({
   report,
   month,
   year,
+  taxonomy,
 }: {
   report: BudgetReport;
   month: number;
   year: number;
+  taxonomy: Taxonomy;
 }) {
+  const { groupOrder, groupLabels: GROUP_LABELS, categoryLabels: CATEGORY_LABELS, categoriesByGroup, groupBehavior } = taxonomy;
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [lookback, setLookback] = useState(6);
   const [newCat, setNewCat] = useState("");
   const [newAmount, setNewAmount] = useState("");
+
+  // Budgetable categories = anything except income/excluded groups, in canonical group order.
+  const BUDGETABLE = useMemo(
+    () =>
+      groupOrder
+        .filter((g) => groupBehavior[g] !== "income" && groupBehavior[g] !== "excluded")
+        .flatMap((g) => (categoriesByGroup[g] || []).map((c) => ({ category: c, group: g }))),
+    [groupOrder, groupBehavior, categoriesByGroup]
+  );
 
   const saveBudget = async (category: string, amount: number) => {
     await fetch("/api/budgets", {

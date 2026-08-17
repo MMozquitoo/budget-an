@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { TransactionCategory } from "@/generated/prisma/client";
 import { safe, badRequest, toFiniteNumber, toValidDate } from "@/lib/api";
 import { isCategoryInGroup } from "@/lib/rules";
+import { getTaxonomy } from "@/lib/taxonomy";
 
 // PUT /api/savings-goals/:id — partial update.
 export const PUT = safe(async (
@@ -17,7 +17,7 @@ export const PUT = safe(async (
     targetAmount?: number;
     targetDate?: Date;
     startDate?: Date;
-    category?: TransactionCategory | null;
+    category?: string | null;
   } = {};
 
   if (body.name !== undefined) {
@@ -43,10 +43,11 @@ export const PUT = safe(async (
     if (body.category === null || body.category === "") {
       data.category = null;
     } else {
-      if (!isCategoryInGroup("SAVINGS", body.category)) {
+      const taxonomy = await getTaxonomy();
+      if (!isCategoryInGroup("SAVINGS", body.category, taxonomy.categoriesByGroup)) {
         return badRequest(`${body.category} n'est pas une catégorie d'épargne`);
       }
-      data.category = body.category as TransactionCategory;
+      data.category = body.category as string;
     }
   }
 

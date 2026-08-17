@@ -6,6 +6,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { detectRecurring, summariseRecurring } from "@/lib/recurring";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { monthPartsInZone, monthRange, shiftMonth } from "@/lib/utils";
 
 export async function getRecurringData(months = 18, includeInactive = false) {
@@ -26,6 +27,13 @@ export async function getRecurringData(months = 18, includeInactive = false) {
   const end = monthPartsInZone(latest.date);
   const start = shiftMonth(end.year, end.month, -(window - 1));
 
+  const taxonomy = await getTaxonomy();
+  // Income is regular too (salary), but it is not a subscription — and
+  // neither is a recurring internal transfer or a business cash flow.
+  const nonSpendGroups = taxonomy.groupOrder.filter(
+    (g) => taxonomy.groupBehavior[g] === "income" || taxonomy.groupBehavior[g] === "excluded"
+  );
+
   const transactions = await prisma.personalTransaction.findMany({
     where: {
       date: {
@@ -33,9 +41,7 @@ export async function getRecurringData(months = 18, includeInactive = false) {
         lt: monthRange(end.year, end.month).lt,
       },
       parentId: null,
-      // Income is regular too (salary), but it is not a subscription — and
-      // neither is a recurring internal transfer or a business cash flow.
-      group: { notIn: ["INCOME", "TRANSFER", "BUSINESS"] },
+      group: { notIn: nonSpendGroups },
     },
     select: {
       id: true,

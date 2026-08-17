@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatCurrency, cn, CATEGORY_LABELS, GROUP_LABELS } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { Upload, FileText, Check, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 
 interface PreviewRow {
@@ -25,6 +25,7 @@ interface Preview {
   newCount: number;
   range: { from: string; to: string } | null;
   preview: PreviewRow[];
+  categoryLabels: Record<string, string>;
 }
 
 export default function ImportPage() {
@@ -206,7 +207,7 @@ export default function ImportPage() {
                           <td className="whitespace-nowrap px-3 py-2 text-gray-500">{r.date}</td>
                           <td className="max-w-[220px] truncate px-3 py-2 text-gray-800">{r.description}</td>
                           <td className="px-3 py-2 text-gray-500">
-                            {CATEGORY_LABELS[r.category] || r.category}
+                            {preview.categoryLabels[r.category] || r.category}
                             {r.ruleName && <span className="ml-1 text-[10px] text-indigo-500">règle</span>}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-gray-900">

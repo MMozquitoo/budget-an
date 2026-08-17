@@ -6,33 +6,32 @@
  * `summary.ts`). A budget is one amount per (month, year, category):
  *   - for expense/debt categories it is a CEILING you want to stay under,
  *   - for savings categories it is a TARGET you want to reach.
+ *
+ * `categoryGroup` (category key -> group key) and `groupBehavior` (group key
+ * -> "income"|"expense"|"savings"|"debt"|"excluded") come from the dynamic
+ * taxonomy (lib/taxonomy.ts) — passed in explicitly rather than imported, so
+ * this stays testable and works for any group/category Adrien creates later.
  */
 
-import { CATEGORIES_BY_GROUP, monthKeyInZone, shiftMonth } from "./utils";
+import { monthKeyInZone, shiftMonth } from "./utils";
 
-/** category → group, derived from the canonical taxonomy in utils.ts. */
-export const CATEGORY_GROUP: Record<string, string> = Object.fromEntries(
-  Object.entries(CATEGORIES_BY_GROUP).flatMap(([group, cats]) =>
-    cats.map((c) => [c, group])
-  )
-);
-
-/** Categories that can hold a budget — everything except income, transfers and MCAN's own cash flow. */
-export function isBudgetable(category: string): boolean {
-  const group = CATEGORY_GROUP[category];
-  return (
-    group !== undefined &&
-    group !== "INCOME" &&
-    group !== "TRANSFER" &&
-    group !== "BUSINESS"
-  );
+/** Categories that can hold a budget — anything except income and "excluded" groups (transfers, MCAN's own cash flow). */
+export function isBudgetable(
+  category: string,
+  categoryGroup: Record<string, string>,
+  groupBehavior: Record<string, string>
+): boolean {
+  const group = categoryGroup[category];
+  if (group === undefined) return false;
+  const behavior = groupBehavior[group];
+  return behavior !== "income" && behavior !== "excluded";
 }
 
 export type BudgetDirection = "cap" | "goal";
 
-/** Savings categories are goals to reach; everything else is a ceiling. */
-export function budgetDirection(group: string): BudgetDirection {
-  return group === "SAVINGS" ? "goal" : "cap";
+/** Savings-behaving groups are goals to reach; everything else is a ceiling. */
+export function budgetDirection(group: string, groupBehavior: Record<string, string>): BudgetDirection {
+  return groupBehavior[group] === "savings" ? "goal" : "cap";
 }
 
 export type BudgetHealth =
@@ -88,13 +87,15 @@ function goalHealth(pct: number): BudgetHealth {
  */
 export function buildReport(
   budgets: Array<{ category: string; amount: number }>,
-  actualByCategory: Record<string, number>
+  actualByCategory: Record<string, number>,
+  categoryGroup: Record<string, string>,
+  groupBehavior: Record<string, string>
 ): BudgetReport {
   const budgetedCats = new Set(budgets.map((b) => b.category));
 
   const lines: BudgetLine[] = budgets.map((b) => {
-    const group = CATEGORY_GROUP[b.category] ?? "UNEXPECTED";
-    const direction = budgetDirection(group);
+    const group = categoryGroup[b.category] ?? "UNEXPECTED";
+    const direction = budgetDirection(group, groupBehavior);
     const actual = actualByCategory[b.category] ?? 0;
     const budget = b.amount;
     const pct = pctOf(actual, budget);
@@ -116,8 +117,8 @@ export function buildReport(
   let unbudgetedSpend = 0;
   for (const [category, amount] of Object.entries(actualByCategory)) {
     if (budgetedCats.has(category)) continue;
-    if (!isBudgetable(category)) continue;
-    if (budgetDirection(CATEGORY_GROUP[category]) !== "cap") continue;
+    if (!isBudgetable(category, categoryGroup, groupBehavior)) continue;
+    if (budgetDirection(categoryGroup[category], groupBehavior) !== "cap") continue;
     unbudgetedSpend += amount;
   }
 
@@ -145,6 +146,8 @@ export function roundNice(value: number): number {
  */
 export function suggestBudgets(
   monthlyByCategory: Array<Record<string, number>>,
+  categoryGroup: Record<string, string>,
+  groupBehavior: Record<string, string>,
   method: "mean" | "median" = "mean"
 ): Record<string, number> {
   const months = monthlyByCategory.length;
@@ -152,7 +155,7 @@ export function suggestBudgets(
 
   const categories = new Set<string>();
   for (const m of monthlyByCategory)
-    for (const c of Object.keys(m)) if (isBudgetable(c)) categories.add(c);
+    for (const c of Object.keys(m)) if (isBudgetable(c, categoryGroup, groupBehavior)) categories.add(c);
 
   const out: Record<string, number> = {};
   for (const category of categories) {
@@ -184,7 +187,9 @@ export function suggestFromTransactions(
   transactions: Array<{ amount: number; category: string; date: Date }>,
   anchorYear: number,
   anchorMonth: number,
-  months: number
+  months: number,
+  categoryGroup: Record<string, string>,
+  groupBehavior: Record<string, string>
 ): Record<string, number> {
   const buckets = new Map<string, Record<string, number>>();
   for (let i = months; i >= 1; i--) {
@@ -196,5 +201,5 @@ export function suggestFromTransactions(
     if (!bucket) continue;
     bucket[t.category] = (bucket[t.category] ?? 0) + t.amount;
   }
-  return suggestBudgets([...buckets.values()]);
+  return suggestBudgets([...buckets.values()], categoryGroup, groupBehavior);
 }

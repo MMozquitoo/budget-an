@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { TransactionGroup, TransactionCategory, MatchType } from "@/generated/prisma/client";
-import { safe, isEnumValue, badRequest } from "@/lib/api";
+import { MatchType } from "@/generated/prisma/client";
+import { safe, isEnumValue, isValidKey, badRequest } from "@/lib/api";
 import { isCategoryInGroup, validateRegex } from "@/lib/rules";
+import { getTaxonomy } from "@/lib/taxonomy";
 
 export const PUT = safe(async (
   request: NextRequest,
@@ -10,11 +11,12 @@ export const PUT = safe(async (
 ) => {
   const { id } = await params;
   const body = await request.json();
+  const taxonomy = await getTaxonomy();
 
-  if (body.group && !isEnumValue(body.group, TransactionGroup)) {
+  if (body.group && !isValidKey(body.group, taxonomy.groupLabels)) {
     return badRequest("Invalid group");
   }
-  if (body.category && !isEnumValue(body.category, TransactionCategory)) {
+  if (body.category && !isValidKey(body.category, taxonomy.categoryLabels)) {
     return badRequest("Invalid category");
   }
   if (body.matchType && !isEnumValue(body.matchType, MatchType)) {
@@ -28,7 +30,7 @@ export const PUT = safe(async (
 
   const group = body.group ?? existing.group;
   const category = body.category ?? existing.category;
-  if (!isCategoryInGroup(group, category)) {
+  if (!isCategoryInGroup(group, category, taxonomy.categoriesByGroup)) {
     return badRequest(`La catégorie ${category} n'appartient pas au groupe ${group}`);
   }
 

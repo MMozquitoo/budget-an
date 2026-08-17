@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wallet, ChevronRight } from "lucide-react";
-import { formatCurrency, cn, CATEGORY_LABELS } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 interface Line {
   category: string;
@@ -27,7 +27,13 @@ const BAR: Record<string, string> = {
 };
 
 /** Compact budget progress for the dashboard — links out to the full /budgets page. */
-export default function BudgetProgressCard({ report }: { report: Report | null }) {
+export default function BudgetProgressCard({
+  report,
+  categoryLabels,
+}: {
+  report: Report | null;
+  categoryLabels: Record<string, string>;
+}) {
   if (!report) return null;
 
   const top = [...report.lines].sort((a, b) => b.pct - a.pct).slice(0, 5);
@@ -76,7 +82,7 @@ export default function BudgetProgressCard({ report }: { report: Report | null }
               <div key={l.category}>
                 <div className="mb-1 flex items-center justify-between gap-2 text-xs">
                   <span className="truncate text-gray-600">
-                    {CATEGORY_LABELS[l.category] || l.category}
+                    {categoryLabels[l.category] || l.category}
                   </span>
                   <span className="whitespace-nowrap text-gray-400">
                     {formatCurrency(l.actual)} / {formatCurrency(l.budget)}

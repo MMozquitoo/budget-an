@@ -2,9 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   computeProgress,
   buildGoalReport,
-  categoriesForGoal,
-  isSavingsCategory,
+  categoriesForGoal as categoriesForGoalRaw,
+  isSavingsCategory as isSavingsCategoryRaw,
 } from "./savings-goals";
+import { DEFAULT_CATEGORIES_BY_GROUP } from "./test-taxonomy";
+
+const categoriesForGoal = (category: string | null) => categoriesForGoalRaw(category, DEFAULT_CATEGORIES_BY_GROUP);
+const isSavingsCategory = (category: string) => isSavingsCategoryRaw(category, DEFAULT_CATEGORIES_BY_GROUP);
 
 const goal = (overrides = {}) => ({
   targetAmount: 10000,

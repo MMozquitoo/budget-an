@@ -54,8 +54,12 @@ model PersonalTransaction {
   id          String              @id @default(cuid())
   date        DateTime
   amount      Decimal             @db.Decimal(12, 2)
-  group       TransactionGroup
-  category    TransactionCategory
+  /// References CategoryGroup.key / Category.key (enforced by a raw FK in
+  /// the migration, not a Prisma relation — see lib/taxonomy.ts). Was a
+  /// Postgres enum until the dynamic-taxonomy migration; kept as plain
+  /// String so Adrien can create new groups/categories at runtime.
+  group       String
+  category    String
   description String
   notes       String?
   recurring   Boolean             @default(false)
@@ -86,8 +90,8 @@ model ClassificationRule {
   matchField  String              @default("description")
   matchType   MatchType           @default(CONTAINS)
   matchValue  String
-  group       TransactionGroup
-  category    TransactionCategory
+  group       String
+  category    String
   active      Boolean             @default(true)
   createdAt   DateTime            @default(now())
 
@@ -132,7 +136,7 @@ model Budget {
   id        String              @id @default(cuid())
   month     Int
   year      Int
-  category  TransactionCategory
+  category  String
   amount    Decimal             @db.Decimal(12, 2)
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
@@ -157,10 +161,9 @@ model SavingsGoal {
   /// creation time; can be backdated if savings already started before the
   /// goal was entered.
   startDate    DateTime              @default(now())
-  /// Null = counts the whole SAVINGS group. If set, must be one of the
-  /// SAVINGS TransactionCategory values (enforced in the API/agent layer —
-  /// Postgres enums can't express "subset of an enum").
-  category     TransactionCategory?
+  /// Null = counts the whole SAVINGS group. If set, must be a category
+  /// belonging to the SAVINGS group (enforced in the API/agent layer).
+  category     String?
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
 
@@ -216,79 +219,45 @@ model AgentMemory {
   @@map("agent_memory")
 }
 
-enum TransactionGroup {
-  INCOME
-  FIXED_EXPENSE
-  VARIABLE_EXPENSE
-  SAVINGS
-  DEBT
-  UNEXPECTED
-  TRANSFER
-  BUSINESS
+// ──────────────────────────────────────────────
+// TAXONOMY — dynamic groups/categories (was a fixed Postgres enum; Adrien
+// can now create new ones from the chat, see lib/taxonomy.ts). "behavior"
+// generalizes what previously was ad-hoc `!== "TRANSFER" && !== "BUSINESS"`
+// checks scattered across the pure-logic layer.
+// ──────────────────────────────────────────────
+
+model CategoryGroup {
+  id         String     @id @default(cuid())
+  key        String     @unique
+  label      String
+  /// Key into the fixed Tailwind palette in lib/utils.ts — Tailwind needs
+  /// literal class names, so colors can't be built from arbitrary strings.
+  colorTheme String
+  order      Int
+  /// "income" | "expense" | "savings" | "debt" | "excluded" — drives
+  /// aggregate()'s totals. New custom groups may only be "expense" or
+  /// "excluded"; the other three are reserved for the built-in groups.
+  behavior   String     @default("expense")
+  /// true for anything Adrien created via chat — protects the 8 built-ins.
+  custom     Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  categories Category[]
+
+  @@map("category_groups")
 }
 
-enum TransactionCategory {
-  // Ingresos
-  SALARY
-  FREELANCE
-  SALES
-  BONUS
-  AID
-  OTHER_INCOME
+model Category {
+  id        String        @id @default(cuid())
+  key       String        @unique
+  label     String
+  order     Int
+  groupId   String
+  group     CategoryGroup @relation(fields: [groupId], references: [id])
+  custom    Boolean       @default(false)
+  createdAt DateTime      @default(now())
 
-  // Gastos fijos
-  RENT
-  UTILITIES
-  INTERNET_PHONE
-  TRANSPORT_FIXED
-  SUBSCRIPTIONS
-  INSURANCE
-  CREDIT_PAYMENT
-  EDUCATION_FIXED
-  FAMILY_SUPPORT_CLAUDIA
-  FAMILY_SUPPORT_FATHER
-
-  // Gastos variables
-  GROCERIES
-  RESTAURANTS
-  TRANSPORT_VARIABLE
-  CLOTHING
-  PHARMACY
-  PETS
-  PERSONAL_CARE
-  ENTERTAINMENT
-  GIFTS
-  REPAIRS
-  VACATION
-
-  // Ahorro
-  GENERAL_SAVINGS
-  EMERGENCY_FUND
-  TRAVEL_FUND
-  EDUCATION_FUND
-  BIG_PURCHASE
-  INVESTMENT
-
-  // Deudas
-  CREDIT_CARD
-  PERSONAL_LOAN
-  INSTALLMENT
-  INTEREST
-  PENDING_PAYMENT
-
-  // Imprevistos
-  EMERGENCY
-  HEALTH
-  UNEXPECTED_REPAIR
-  FINE
-  UNPLANNED
-
-  // Virements
-  INTERNAL_TRANSFER
-
-  // Compte pro (MCAN)
-  BUSINESS_INCOME
-  BUSINESS_EXPENSE
+  @@index([groupId])
+  @@map("categories")
 }
 
 // ──────────────────────────────────────────────

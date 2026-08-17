@@ -11,16 +11,10 @@ import {
   CreditCard,
   DollarSign,
   ChevronRight,
+  Tag,
 } from "lucide-react";
-import {
-  formatCurrency,
-  cn,
-  GROUP_LABELS,
-  GROUP_COLORS,
-  CATEGORY_LABELS,
-  CATEGORIES_BY_GROUP,
-  GROUP_ORDER,
-} from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { IncomeVsExpensesChart, GroupTrendChart } from "@/components/TrendChart";
 import BudgetProgressCard from "@/components/BudgetProgressCard";
 import AccountBreakdownCard from "@/components/AccountBreakdownCard";
@@ -51,6 +45,11 @@ const GROUP_ICONS: Record<string, typeof Wallet> = {
   TRANSFER: ArrowLeftRight,
   BUSINESS: Building2,
 };
+
+/** A group Adrien creates via chat has no preset icon — fall back to a generic tag. */
+function iconFor(group: string): typeof Wallet {
+  return GROUP_ICONS[group] ?? Tag;
+}
 
 function deltaIcon(current: number, previous: number) {
   if (previous === 0) return null;
@@ -85,12 +84,13 @@ export default async function Dashboard({
     year = latest.year;
   }
 
-  const [data, trends, budgetReport, accountData, forecast] = await Promise.all([
+  const [data, trends, budgetReport, accountData, forecast, taxonomy] = await Promise.all([
     getMonthSummary(month, year),
     getMonthlyTrends(8),
     getBudgetReport(month, year),
     getAccountBreakdown(month, year),
     computeForecast(6, 6),
+    getTaxonomy(),
   ]);
 
   const movimientosHref = (group?: string, category?: string) => {
@@ -189,7 +189,7 @@ export default async function Dashboard({
         </div>
       </div>
 
-      <BudgetProgressCard report={budgetReport} />
+      <BudgetProgressCard report={budgetReport} categoryLabels={taxonomy.categoryLabels} />
 
       <AccountBreakdownCard accounts={accountData.accounts} />
 
@@ -197,11 +197,11 @@ export default async function Dashboard({
 
       {/* Group breakdown cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {GROUP_ORDER.map((group) => {
-          const colors = GROUP_COLORS[group];
-          const Icon = GROUP_ICONS[group];
+        {taxonomy.groupOrder.map((group) => {
+          const colors = taxonomy.groupColors[group];
+          const Icon = iconFor(group);
           const total = data.byGroup[group] || 0;
-          const categories = CATEGORIES_BY_GROUP[group];
+          const categories = taxonomy.categoriesByGroup[group];
           const pct = data.totalIncome > 0 ? (total / data.totalIncome) * 100 : 0;
 
           return (
@@ -218,7 +218,7 @@ export default async function Dashboard({
                     <Icon className={cn("h-4 w-4", colors.text)} />
                   </div>
                   <span className="text-sm font-semibold text-gray-900">
-                    {GROUP_LABELS[group]}
+                    {taxonomy.groupLabels[group]}
                   </span>
                   <ChevronRight className="h-4 w-4 text-gray-300 group-hover/header:text-indigo-500 transition-colors" />
                 </div>
@@ -227,7 +227,7 @@ export default async function Dashboard({
                 </span>
               </Link>
 
-              {group !== "INCOME" && group !== "TRANSFER" && group !== "BUSINESS" && data.totalIncome > 0 && (
+              {taxonomy.groupBehavior[group] !== "income" && taxonomy.groupBehavior[group] !== "excluded" && data.totalIncome > 0 && (
                 <div className="mb-4">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>{pct.toFixed(0)}% des revenus</span>
@@ -255,7 +255,7 @@ export default async function Dashboard({
                       <div className="flex items-center gap-2">
                         <div className={cn("h-1.5 w-1.5 rounded-full", colors.dot)} />
                         <span className="text-gray-500 group-hover/cat:text-gray-900">
-                          {CATEGORY_LABELS[cat]}
+                          {taxonomy.categoryLabels[cat]}
                         </span>
                         <span className="text-xs text-gray-300">
                           {catPct.toFixed(0)}%
@@ -292,7 +292,7 @@ export default async function Dashboard({
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
               Évolution par groupe
             </h2>
-            <GroupTrendChart data={trends} />
+            <GroupTrendChart data={trends} groupLabels={taxonomy.groupLabels} />
           </div>
         </div>
       )}

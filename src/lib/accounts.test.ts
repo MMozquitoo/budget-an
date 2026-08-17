@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parseAccount, accountBreakdown } from "./accounts";
+import { parseAccount, accountBreakdown as accountBreakdownRaw } from "./accounts";
+import { DEFAULT_GROUP_BEHAVIOR } from "./test-taxonomy";
+
+const accountBreakdown = (transactions: Parameters<typeof accountBreakdownRaw>[0]) =>
+  accountBreakdownRaw(transactions, DEFAULT_GROUP_BEHAVIOR);
 
 describe("parseAccount", () => {
   it("extracts the account before the ' | ' separator", () => {

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { safe, badRequest } from "@/lib/api";
-import { TransactionGroup, TransactionCategory } from "@/generated/prisma/client";
 import { parseCSV, prepareRows, dedupe, csvDateRange, MAX_CSV_BYTES, MAX_CSV_ROWS } from "@/lib/import";
+import { getTaxonomy } from "@/lib/taxonomy";
 
 // POST /api/import/apply — insert only the CSV rows not already stored.
 // Incremental and non-destructive: existing rows (reclassifications, splits,
@@ -15,11 +15,14 @@ export const POST = safe(async (request: NextRequest) => {
 
   const rows = parseCSV(csv);
   if (rows.length > MAX_CSV_ROWS) return badRequest("Trop de lignes (max 20 000)");
-  const rules = await prisma.classificationRule.findMany({
-    where: { active: true },
-    orderBy: { priority: "desc" },
-  });
-  const prep = prepareRows(rows, rules);
+  const [rules, taxonomy] = await Promise.all([
+    prisma.classificationRule.findMany({
+      where: { active: true },
+      orderBy: { priority: "desc" },
+    }),
+    getTaxonomy(),
+  ]);
+  const prep = prepareRows(rows, rules, taxonomy.categoriesByGroup);
 
   const range = csvDateRange(prep.prepared);
   if (!range) return Response.json({ inserted: 0, message: "Rien à importer." });
@@ -41,8 +44,8 @@ export const POST = safe(async (request: NextRequest) => {
     data: toInsert.map((r) => ({
       date: r.date,
       amount: r.amount,
-      group: r.group as TransactionGroup,
-      category: r.category as TransactionCategory,
+      group: r.group,
+      category: r.category,
       description: r.description,
       notes: r.notes,
     })),

@@ -1,6 +1,7 @@
 import { streamText, convertToModelMessages, isStepCount } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { budgetTools, buildSystemPrompt, getMemoryFacts } from "@/agent/budget-agent";
+import { buildBudgetTools, buildSystemPrompt, getMemoryFacts } from "@/agent/budget-agent";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
@@ -23,26 +24,27 @@ export async function POST(req: Request) {
     return Response.json({ error: "messages doit être un tableau" }, { status: 400 });
   }
 
-  const memoryFacts = await getMemoryFacts();
+  const [memoryFacts, taxonomy] = await Promise.all([getMemoryFacts(), getTaxonomy()]);
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
     // Cache the (large, mostly-static) system prompt: same content on every
     // message of every conversation, so this is a cache hit after the first
-    // request in the window. See the matching tool-side breakpoint on
-    // getNetWorth in budget-agent.ts — Anthropic caches everything between
-    // the start of the request and a cache_control marker as one unit. A new
-    // rememberFact/forgetFact call changes this string, so it naturally busts
-    // the cache only when the facts actually change.
+    // request in the window. See the matching tool-side breakpoint on the
+    // last tool in buildBudgetTools (budget-agent.ts) — Anthropic caches
+    // everything between the start of the request and a cache_control marker
+    // as one unit. A new rememberFact/forgetFact/createCategory/createGroup
+    // call changes this string, so it naturally busts the cache only when
+    // the facts or taxonomy actually change.
     instructions: {
       role: "system",
-      content: buildSystemPrompt(new Date(), memoryFacts),
+      content: buildSystemPrompt(new Date(), memoryFacts, taxonomy),
       providerOptions: {
         anthropic: { cacheControl: { type: "ephemeral", ttl: "1h" } },
       },
     },
     messages: await convertToModelMessages(messages),
-    tools: budgetTools,
+    tools: buildBudgetTools(taxonomy),
     stopWhen: isStepCount(5),
   });
 

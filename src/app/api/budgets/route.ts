@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { safe, badRequest, isEnumValue, toFiniteNumber } from "@/lib/api";
-import { TransactionCategory } from "@/generated/prisma/client";
+import { safe, badRequest, isValidKey, toFiniteNumber } from "@/lib/api";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { getBudgetReport } from "@/lib/dashboard-data";
 
 // GET /api/budgets?month=&year= → the month's budgets merged with actual spend.
@@ -22,20 +22,22 @@ export const POST = safe(async (request: NextRequest) => {
   const year = toFiniteNumber(body.year);
   if (!month || !year) return badRequest("month and year required");
 
+  const taxonomy = await getTaxonomy();
+
   const raw: Array<{ category: unknown; amount: unknown }> = Array.isArray(body.budgets)
     ? body.budgets
     : [{ category: body.category, amount: body.amount }];
 
-  const cleaned: Array<{ category: TransactionCategory; amount: number }> = [];
+  const cleaned: Array<{ category: string; amount: number }> = [];
   for (const it of raw) {
-    if (!isEnumValue(it.category, TransactionCategory)) {
+    if (!isValidKey(it.category, taxonomy.categoryLabels)) {
       return badRequest(`Invalid category: ${String(it.category)}`);
     }
     const amount = toFiniteNumber(it.amount);
     if (amount === undefined || amount < 0) {
       return badRequest("amount must be a positive number");
     }
-    cleaned.push({ category: it.category as TransactionCategory, amount });
+    cleaned.push({ category: it.category as string, amount });
   }
 
   const saved = await prisma.$transaction(
@@ -75,13 +77,14 @@ export const DELETE = safe(async (request: NextRequest) => {
   if (!month || !year || !category) {
     return badRequest("id, or month + year + category, required");
   }
-  if (!isEnumValue(category, TransactionCategory)) {
+  const taxonomy = await getTaxonomy();
+  if (!isValidKey(category, taxonomy.categoryLabels)) {
     return badRequest("Invalid category");
   }
 
   await prisma.budget.delete({
     where: {
-      month_year_category: { month, year, category: category as TransactionCategory },
+      month_year_category: { month, year, category },
     },
   });
   return Response.json({ ok: true });

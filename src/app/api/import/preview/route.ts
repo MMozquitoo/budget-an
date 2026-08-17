@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { safe, badRequest } from "@/lib/api";
 import { parseCSV, prepareRows, dedupe, csvDateRange, MAX_CSV_BYTES, MAX_CSV_ROWS } from "@/lib/import";
+import { getTaxonomy } from "@/lib/taxonomy";
 
 // POST /api/import/preview — parse + classify + dedup a CSV WITHOUT writing.
 export const POST = safe(async (request: NextRequest) => {
@@ -12,11 +13,14 @@ export const POST = safe(async (request: NextRequest) => {
 
   const rows = parseCSV(csv);
   if (rows.length > MAX_CSV_ROWS) return badRequest("Trop de lignes (max 20 000)");
-  const rules = await prisma.classificationRule.findMany({
-    where: { active: true },
-    orderBy: { priority: "desc" },
-  });
-  const prep = prepareRows(rows, rules);
+  const [rules, taxonomy] = await Promise.all([
+    prisma.classificationRule.findMany({
+      where: { active: true },
+      orderBy: { priority: "desc" },
+    }),
+    getTaxonomy(),
+  ]);
+  const prep = prepareRows(rows, rules, taxonomy.categoriesByGroup);
 
   const range = csvDateRange(prep.prepared);
   let toInsert = prep.prepared;
@@ -55,5 +59,6 @@ export const POST = safe(async (request: NextRequest) => {
       description: d.description,
       ruleName: d.ruleName ?? null,
     })),
+    categoryLabels: taxonomy.categoryLabels,
   });
 });

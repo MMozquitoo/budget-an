@@ -4,11 +4,15 @@ import {
   isInternalTransfer,
   fingerprint,
   parseDate,
-  prepareRows,
+  prepareRows as prepareRowsRaw,
   dedupe,
   type PreparedRow,
 } from "./import";
 import type { RuleLike } from "./rules";
+import { DEFAULT_CATEGORIES_BY_GROUP } from "./test-taxonomy";
+
+const prepareRows = (rows: Parameters<typeof prepareRowsRaw>[0], rules: RuleLike[]) =>
+  prepareRowsRaw(rows, rules, DEFAULT_CATEGORIES_BY_GROUP);
 
 const row = (
   date: string,

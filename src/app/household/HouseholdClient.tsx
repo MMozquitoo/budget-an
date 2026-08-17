@@ -3,17 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, X, ArrowLeft } from "lucide-react";
-import {
-  formatCurrency,
-  getMonthName,
-  getCurrentYear,
-  cn,
-  GROUP_LABELS,
-  GROUP_COLORS,
-  CATEGORY_LABELS,
-  CATEGORIES_BY_GROUP,
-  GROUP_ORDER,
-} from "@/lib/utils";
+import { formatCurrency, getMonthName, getCurrentYear, cn } from "@/lib/utils";
+import type { Taxonomy } from "@/lib/taxonomy";
 
 interface Transaction {
   id: string;
@@ -32,13 +23,16 @@ export default function HouseholdClient({
   year,
   initialGroup,
   initialCategory,
+  taxonomy,
 }: {
   transactions: Transaction[];
   month: number;
   year: number;
   initialGroup: string;
   initialCategory: string;
+  taxonomy: Taxonomy;
 }) {
+  const { groupOrder: GROUP_ORDER, groupLabels: GROUP_LABELS, groupColors: GROUP_COLORS, categoryLabels: CATEGORY_LABELS, categoriesByGroup: CATEGORIES_BY_GROUP } = taxonomy;
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);

@@ -1,19 +1,36 @@
 import { describe, it, expect } from "vitest";
 import {
-  CATEGORY_GROUP,
-  isBudgetable,
-  budgetDirection,
-  buildReport,
+  isBudgetable as isBudgetableRaw,
+  budgetDirection as budgetDirectionRaw,
+  buildReport as buildReportRaw,
   roundNice,
-  suggestBudgets,
-  suggestFromTransactions,
+  suggestBudgets as suggestBudgetsRaw,
+  suggestFromTransactions as suggestFromTransactionsRaw,
 } from "./budgets";
+import { DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR } from "./test-taxonomy";
+
+const isBudgetable = (category: string) => isBudgetableRaw(category, DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR);
+const budgetDirection = (group: string) => budgetDirectionRaw(group, DEFAULT_GROUP_BEHAVIOR);
+const buildReport = (
+  budgets: Parameters<typeof buildReportRaw>[0],
+  actualByCategory: Parameters<typeof buildReportRaw>[1]
+) => buildReportRaw(budgets, actualByCategory, DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR);
+const suggestBudgets = (
+  monthlyByCategory: Parameters<typeof suggestBudgetsRaw>[0],
+  method?: "mean" | "median"
+) => suggestBudgetsRaw(monthlyByCategory, DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR, method);
+const suggestFromTransactions = (
+  transactions: Parameters<typeof suggestFromTransactionsRaw>[0],
+  anchorYear: number,
+  anchorMonth: number,
+  months: number
+) => suggestFromTransactionsRaw(transactions, anchorYear, anchorMonth, months, DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR);
 
 describe("CATEGORY_GROUP / isBudgetable", () => {
   it("maps categories to their group", () => {
-    expect(CATEGORY_GROUP["GROCERIES"]).toBe("VARIABLE_EXPENSE");
-    expect(CATEGORY_GROUP["RENT"]).toBe("FIXED_EXPENSE");
-    expect(CATEGORY_GROUP["EMERGENCY_FUND"]).toBe("SAVINGS");
+    expect(DEFAULT_CATEGORY_GROUP["GROCERIES"]).toBe("VARIABLE_EXPENSE");
+    expect(DEFAULT_CATEGORY_GROUP["RENT"]).toBe("FIXED_EXPENSE");
+    expect(DEFAULT_CATEGORY_GROUP["EMERGENCY_FUND"]).toBe("SAVINGS");
   });
 
   it("excludes income from budgetable categories", () => {
@@ -24,7 +41,7 @@ describe("CATEGORY_GROUP / isBudgetable", () => {
   });
 
   it("excludes internal transfers from budgetable categories", () => {
-    expect(CATEGORY_GROUP["INTERNAL_TRANSFER"]).toBe("TRANSFER");
+    expect(DEFAULT_CATEGORY_GROUP["INTERNAL_TRANSFER"]).toBe("TRANSFER");
     expect(isBudgetable("INTERNAL_TRANSFER")).toBe(false);
   });
 });

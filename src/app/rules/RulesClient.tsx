@@ -2,14 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  cn,
-  GROUP_LABELS,
-  GROUP_COLORS,
-  CATEGORY_LABELS,
-  CATEGORIES_BY_GROUP,
-  GROUP_ORDER,
-} from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import type { Taxonomy } from "@/lib/taxonomy";
 import { Plus, Trash2, Pencil, Check, X, Settings, Sparkles } from "lucide-react";
 
 interface Rule {
@@ -44,10 +38,13 @@ const MATCH_TYPES = [
 export default function RulesClient({
   rules,
   suggestions,
+  taxonomy,
 }: {
   rules: Rule[];
   suggestions: Suggestion[];
+  taxonomy: Taxonomy;
 }) {
+  const { groupOrder: GROUP_ORDER, groupLabels: GROUP_LABELS, groupColors: GROUP_COLORS, categoryLabels: CATEGORY_LABELS, categoriesByGroup: CATEGORIES_BY_GROUP } = taxonomy;
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

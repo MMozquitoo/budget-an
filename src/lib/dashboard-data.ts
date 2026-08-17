@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { aggregate } from "@/lib/summary";
 import { buildReport } from "@/lib/budgets";
 import { accountBreakdown } from "@/lib/accounts";
+import { getTaxonomy } from "@/lib/taxonomy";
 import {
   monthRange,
   monthPartsInZone,
@@ -37,7 +38,7 @@ export async function getLatestMonth() {
 export async function getMonthSummary(month: number, year: number) {
   const prev = shiftMonth(year, month, -1);
 
-  const [current, previous] = await Promise.all([
+  const [current, previous, taxonomy] = await Promise.all([
     prisma.personalTransaction.findMany({
       where: { date: monthRange(year, month), parentId: null },
       select: { amount: true, group: true, category: true },
@@ -46,6 +47,7 @@ export async function getMonthSummary(month: number, year: number) {
       where: { date: monthRange(prev.year, prev.month), parentId: null },
       select: { amount: true, group: true, category: true },
     }),
+    getTaxonomy(),
   ]);
 
   const toLite = (rows: typeof current) =>
@@ -55,8 +57,8 @@ export async function getMonthSummary(month: number, year: number) {
       category: t.category as string,
     }));
 
-  const totals = aggregate(toLite(current));
-  const prevTotals = aggregate(toLite(previous));
+  const totals = aggregate(toLite(current), taxonomy.groupBehavior);
+  const prevTotals = aggregate(toLite(previous), taxonomy.groupBehavior);
 
   return {
     month,
@@ -123,21 +125,25 @@ export async function getMonthlyTrends(monthsArg = 6, groupFilter?: string) {
 
 /** The month's budgets merged with actual spend. */
 export async function getBudgetReport(month: number, year: number) {
-  const [budgets, transactions] = await Promise.all([
+  const [budgets, transactions, taxonomy] = await Promise.all([
     prisma.budget.findMany({ where: { month, year }, orderBy: { category: "asc" } }),
     prisma.personalTransaction.findMany({
       where: { parentId: null, date: monthRange(year, month) },
       select: { amount: true, group: true, category: true },
     }),
+    getTaxonomy(),
   ]);
 
   const { byCategory } = aggregate(
-    transactions.map((t) => ({ amount: Number(t.amount), group: t.group, category: t.category }))
+    transactions.map((t) => ({ amount: Number(t.amount), group: t.group, category: t.category })),
+    taxonomy.groupBehavior
   );
 
   const report = buildReport(
     budgets.map((b) => ({ category: b.category, amount: Number(b.amount) })),
-    byCategory
+    byCategory,
+    taxonomy.categoryGroup,
+    taxonomy.groupBehavior
   );
 
   return { month, year, ...report };
@@ -145,13 +151,17 @@ export async function getBudgetReport(month: number, year: number) {
 
 /** Spend/income per source account for the month. */
 export async function getAccountBreakdown(month: number, year: number) {
-  const txs = await prisma.personalTransaction.findMany({
-    where: { parentId: null, date: monthRange(year, month) },
-    select: { notes: true, group: true, category: true, amount: true },
-  });
+  const [txs, taxonomy] = await Promise.all([
+    prisma.personalTransaction.findMany({
+      where: { parentId: null, date: monthRange(year, month) },
+      select: { notes: true, group: true, category: true, amount: true },
+    }),
+    getTaxonomy(),
+  ]);
 
   const accounts = accountBreakdown(
-    txs.map((t) => ({ notes: t.notes, group: t.group, category: t.category, amount: Number(t.amount) }))
+    txs.map((t) => ({ notes: t.notes, group: t.group, category: t.category, amount: Number(t.amount) })),
+    taxonomy.groupBehavior
   );
   return { month, year, accounts };
 }

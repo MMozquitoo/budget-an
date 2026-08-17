@@ -6,6 +6,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { averageNetFlow, forecast, firstShortfall, type FlowMonth } from "@/lib/forecast";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { monthRange, monthKeyInZone, monthPartsInZone, shiftMonth } from "@/lib/utils";
 
 export async function computeForecast(
@@ -23,16 +24,19 @@ export async function computeForecast(
   const anchor = monthPartsInZone(latest?.date ?? new Date());
 
   const start = shiftMonth(anchor.year, anchor.month, -(months - 1));
-  const txs = await prisma.personalTransaction.findMany({
-    where: {
-      parentId: null,
-      date: {
-        gte: monthRange(start.year, start.month).gte,
-        lt: monthRange(anchor.year, anchor.month).lt,
+  const [txs, taxonomy] = await Promise.all([
+    prisma.personalTransaction.findMany({
+      where: {
+        parentId: null,
+        date: {
+          gte: monthRange(start.year, start.month).gte,
+          lt: monthRange(anchor.year, anchor.month).lt,
+        },
       },
-    },
-    select: { amount: true, group: true, date: true },
-  });
+      select: { amount: true, group: true, date: true },
+    }),
+    getTaxonomy(),
+  ]);
 
   const buckets = new Map<string, FlowMonth>();
   for (let i = months - 1; i >= 0; i--) {
@@ -43,9 +47,10 @@ export async function computeForecast(
     const b = buckets.get(monthKeyInZone(t.date));
     if (!b) continue;
     const amt = Number(t.amount);
-    if (t.group === "INCOME") b.income += amt;
-    else if (t.group === "SAVINGS") b.savings += amt;
-    else if (t.group !== "TRANSFER" && t.group !== "BUSINESS") b.expenses += amt;
+    const behavior = taxonomy.groupBehavior[t.group];
+    if (behavior === "income") b.income += amt;
+    else if (behavior === "savings") b.savings += amt;
+    else if (behavior !== "excluded") b.expenses += amt;
   }
   const series = [...buckets.values()];
   const avgNetFlow = averageNetFlow(series);

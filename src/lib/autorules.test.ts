@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { suggestRules, type ManualTx } from "./autorules";
+import { suggestRules as suggestRulesRaw, type ManualTx } from "./autorules";
 import type { RuleLike } from "./rules";
+import { DEFAULT_CATEGORIES_BY_GROUP } from "./test-taxonomy";
+
+const suggestRules = (manual: ManualTx[], existingRules: RuleLike[], minCount?: number) =>
+  suggestRulesRaw(manual, existingRules, DEFAULT_CATEGORIES_BY_GROUP, minCount);
 
 const tx = (description: string, group: string, category: string): ManualTx => ({
   description,

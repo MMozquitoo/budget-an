@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { suggestRules } from "@/lib/autorules";
+import { getTaxonomy } from "@/lib/taxonomy";
 import RulesClient from "./RulesClient";
 
 // No searchParams here to signal per-request rendering to Next — same fix
@@ -7,13 +8,14 @@ import RulesClient from "./RulesClient";
 export const dynamic = "force-dynamic";
 
 export default async function RulesPage() {
-  const [rules, manual, allRules] = await Promise.all([
+  const [rules, manual, allRules, taxonomy] = await Promise.all([
     prisma.classificationRule.findMany({ orderBy: { priority: "desc" } }),
     prisma.personalTransaction.findMany({
       where: { manuallyClassified: true, parentId: null },
       select: { description: true, notes: true, group: true, category: true },
     }),
     prisma.classificationRule.findMany(),
+    getTaxonomy(),
   ]);
 
   const suggestions = suggestRules(
@@ -23,8 +25,9 @@ export default async function RulesPage() {
       group: t.group,
       category: t.category,
     })),
-    allRules
+    allRules,
+    taxonomy.categoriesByGroup
   );
 
-  return <RulesClient rules={rules} suggestions={suggestions} />;
+  return <RulesClient rules={rules} suggestions={suggestions} taxonomy={taxonomy} />;
 }

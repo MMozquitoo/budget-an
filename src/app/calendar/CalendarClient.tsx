@@ -3,14 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  formatCurrency,
-  getMonthName,
-  cn,
-  GROUP_COLORS,
-  GROUP_LABELS,
-  CATEGORY_LABELS,
-} from "@/lib/utils";
+import { formatCurrency, getMonthName, cn } from "@/lib/utils";
+import type { Taxonomy } from "@/lib/taxonomy";
 
 interface Transaction {
   id: string;
@@ -32,11 +26,14 @@ export default function CalendarClient({
   transactions,
   month,
   year,
+  taxonomy,
 }: {
   transactions: Transaction[];
   month: number;
   year: number;
+  taxonomy: Taxonomy;
 }) {
+  const { groupColors: GROUP_COLORS, groupLabels: GROUP_LABELS, categoryLabels: CATEGORY_LABELS } = taxonomy;
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const daysInMonth = new Date(year, month, 0).getDate();

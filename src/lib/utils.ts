@@ -131,96 +131,28 @@ export function formatPercent(value: number): string {
 }
 
 // ── Personal Transaction System ──
+// The taxonomy itself (groups/categories/labels/order) is no longer a
+// static export here — it's DB-backed so Adrien can create his own via
+// chat. See lib/taxonomy.ts (getTaxonomy()) for groupLabels/categoryLabels/
+// categoriesByGroup/groupOrder/groupColors, fetched fresh per request.
+// This file keeps only the presentation constant that has to stay static:
+// Tailwind needs literal class names, so a color can't be built from an
+// arbitrary DB string — CategoryGroup.colorTheme is a key into this palette.
 
-export const GROUP_LABELS: Record<string, string> = {
-  INCOME: "Revenus",
-  FIXED_EXPENSE: "Charges fixes",
-  VARIABLE_EXPENSE: "Dépenses variables",
-  SAVINGS: "Épargne",
-  DEBT: "Dettes",
-  UNEXPECTED: "Imprévus",
-  TRANSFER: "Virements internes",
-  BUSINESS: "Compte pro (MCAN)",
+export const COLOR_THEMES: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+  emerald: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-200" },
+  blue:    { bg: "bg-blue-50",    text: "text-blue-700",    dot: "bg-blue-500",    border: "border-blue-200" },
+  amber:   { bg: "bg-amber-50",   text: "text-amber-700",   dot: "bg-amber-500",   border: "border-amber-200" },
+  violet:  { bg: "bg-violet-50",  text: "text-violet-700",  dot: "bg-violet-500",  border: "border-violet-200" },
+  red:     { bg: "bg-red-50",     text: "text-red-700",     dot: "bg-red-500",     border: "border-red-200" },
+  orange:  { bg: "bg-orange-50",  text: "text-orange-700",  dot: "bg-orange-500",  border: "border-orange-200" },
+  slate:   { bg: "bg-slate-50",   text: "text-slate-700",   dot: "bg-slate-500",   border: "border-slate-200" },
+  indigo:  { bg: "bg-indigo-50",  text: "text-indigo-700",  dot: "bg-indigo-500",  border: "border-indigo-200" },
+  teal:    { bg: "bg-teal-50",    text: "text-teal-700",    dot: "bg-teal-500",    border: "border-teal-200" },
+  pink:    { bg: "bg-pink-50",    text: "text-pink-700",    dot: "bg-pink-500",    border: "border-pink-200" },
+  cyan:    { bg: "bg-cyan-50",    text: "text-cyan-700",    dot: "bg-cyan-500",    border: "border-cyan-200" },
 };
 
-export const GROUP_COLORS: Record<string, { bg: string; text: string; dot: string; border: string }> = {
-  INCOME:           { bg: "bg-emerald-50",  text: "text-emerald-700",  dot: "bg-emerald-500",  border: "border-emerald-200" },
-  FIXED_EXPENSE:    { bg: "bg-blue-50",     text: "text-blue-700",     dot: "bg-blue-500",     border: "border-blue-200" },
-  VARIABLE_EXPENSE: { bg: "bg-amber-50",    text: "text-amber-700",    dot: "bg-amber-500",    border: "border-amber-200" },
-  SAVINGS:          { bg: "bg-violet-50",   text: "text-violet-700",   dot: "bg-violet-500",   border: "border-violet-200" },
-  DEBT:             { bg: "bg-red-50",      text: "text-red-700",      dot: "bg-red-500",      border: "border-red-200" },
-  UNEXPECTED:       { bg: "bg-orange-50",   text: "text-orange-700",   dot: "bg-orange-500",   border: "border-orange-200" },
-  TRANSFER:         { bg: "bg-slate-50",    text: "text-slate-700",    dot: "bg-slate-500",    border: "border-slate-200" },
-  BUSINESS:         { bg: "bg-indigo-50",   text: "text-indigo-700",   dot: "bg-indigo-500",   border: "border-indigo-200" },
-};
-
-export const CATEGORY_LABELS: Record<string, string> = {
-  // Revenus
-  SALARY: "Salaire",
-  FREELANCE: "Freelance",
-  SALES: "Ventes",
-  BONUS: "Primes / Commissions",
-  AID: "Aides / Prêts",
-  OTHER_INCOME: "Autres revenus",
-  // Charges fixes
-  RENT: "Loyer / Crédit immo",
-  UTILITIES: "Services (eau, élec, gaz)",
-  INTERNET_PHONE: "Internet / Téléphone",
-  TRANSPORT_FIXED: "Transport fixe",
-  SUBSCRIPTIONS: "Abonnements",
-  INSURANCE: "Assurances",
-  CREDIT_PAYMENT: "Crédits / Mensualités",
-  EDUCATION_FIXED: "Scolarité / Formation",
-  FAMILY_SUPPORT_CLAUDIA: "Famille de Claudia",
-  FAMILY_SUPPORT_FATHER: "Père (ISF)",
-  // Dépenses variables
-  GROCERIES: "Courses / Alimentation",
-  RESTAURANTS: "Restaurants / Livraison",
-  TRANSPORT_VARIABLE: "Transport occasionnel",
-  CLOTHING: "Vêtements",
-  PHARMACY: "Pharmacie",
-  PETS: "Animaux",
-  PERSONAL_CARE: "Soins / Beauté",
-  ENTERTAINMENT: "Sorties / Loisirs",
-  GIFTS: "Cadeaux",
-  REPAIRS: "Réparations",
-  VACATION: "Vacances",
-  // Épargne
-  GENERAL_SAVINGS: "Épargne générale",
-  EMERGENCY_FUND: "Fonds d'urgence",
-  TRAVEL_FUND: "Voyages",
-  EDUCATION_FUND: "Études",
-  BIG_PURCHASE: "Achat important",
-  INVESTMENT: "Investissement",
-  // Dettes
-  CREDIT_CARD: "Carte de crédit",
-  PERSONAL_LOAN: "Prêts personnels",
-  INSTALLMENT: "Mensualités",
-  INTEREST: "Intérêts",
-  PENDING_PAYMENT: "Paiements en attente",
-  // Imprévus
-  EMERGENCY: "Urgences",
-  HEALTH: "Santé",
-  UNEXPECTED_REPAIR: "Réparations urgentes",
-  FINE: "Amendes",
-  UNPLANNED: "Dépenses imprévues",
-  // Virements
-  INTERNAL_TRANSFER: "Virement interne",
-  // Compte pro (MCAN)
-  BUSINESS_INCOME: "Entrées MCAN",
-  BUSINESS_EXPENSE: "Sorties MCAN",
-};
-
-export const CATEGORIES_BY_GROUP: Record<string, string[]> = {
-  INCOME: ["SALARY", "FREELANCE", "SALES", "BONUS", "AID", "OTHER_INCOME"],
-  FIXED_EXPENSE: ["RENT", "UTILITIES", "INTERNET_PHONE", "TRANSPORT_FIXED", "SUBSCRIPTIONS", "INSURANCE", "CREDIT_PAYMENT", "EDUCATION_FIXED", "FAMILY_SUPPORT_CLAUDIA", "FAMILY_SUPPORT_FATHER"],
-  VARIABLE_EXPENSE: ["GROCERIES", "RESTAURANTS", "TRANSPORT_VARIABLE", "CLOTHING", "PHARMACY", "PETS", "PERSONAL_CARE", "ENTERTAINMENT", "GIFTS", "REPAIRS", "VACATION"],
-  SAVINGS: ["GENERAL_SAVINGS", "EMERGENCY_FUND", "TRAVEL_FUND", "EDUCATION_FUND", "BIG_PURCHASE", "INVESTMENT"],
-  DEBT: ["CREDIT_CARD", "PERSONAL_LOAN", "INSTALLMENT", "INTEREST", "PENDING_PAYMENT"],
-  UNEXPECTED: ["EMERGENCY", "HEALTH", "UNEXPECTED_REPAIR", "FINE", "UNPLANNED"],
-  TRANSFER: ["INTERNAL_TRANSFER"],
-  BUSINESS: ["BUSINESS_INCOME", "BUSINESS_EXPENSE"],
-};
-
-export const GROUP_ORDER = ["INCOME", "FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED", "TRANSFER", "BUSINESS"] as const;
+/** Themes not already used by a built-in group — offered round-robin to new custom groups. */
+export const CUSTOM_GROUP_THEMES = ["teal", "pink", "cyan"] as const;
 

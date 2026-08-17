@@ -8,8 +8,6 @@
  * thing everywhere.
  */
 
-import { CATEGORIES_BY_GROUP } from "@/lib/utils";
-
 export interface RuleLike {
   id?: string;
   name?: string;
@@ -59,9 +57,13 @@ export function validateRegex(pattern: string): { ok: boolean; error?: string } 
   }
 }
 
-/** A category must belong to the group it is filed under. */
-export function isCategoryInGroup(group: string, category: string): boolean {
-  return (CATEGORIES_BY_GROUP[group] || []).includes(category);
+/** A category must belong to the group it is filed under. `categoriesByGroup` comes from the dynamic taxonomy (lib/taxonomy.ts). */
+export function isCategoryInGroup(
+  group: string,
+  category: string,
+  categoriesByGroup: Record<string, string[]>
+): boolean {
+  return (categoriesByGroup[group] || []).includes(category);
 }
 
 function subjectFor(rule: RuleLike, fields: MatchFields): string {
@@ -110,11 +112,12 @@ export function matchesRule(rule: RuleLike, fields: MatchFields): boolean {
  */
 export function classify(
   rules: RuleLike[],
-  fields: MatchFields
+  fields: MatchFields,
+  categoriesByGroup: Record<string, string[]>
 ): Classification | null {
   const candidates = rules
     .filter((r) => r.active !== false)
-    .filter((r) => isCategoryInGroup(r.group, r.category))
+    .filter((r) => isCategoryInGroup(r.group, r.category, categoriesByGroup))
     .map((rule, index) => ({ rule, index }))
     .sort(
       (a, b) =>

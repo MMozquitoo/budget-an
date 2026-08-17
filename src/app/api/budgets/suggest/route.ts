@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { safe, toFiniteNumber } from "@/lib/api";
 import { suggestFromTransactions } from "@/lib/budgets";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { monthRangeBack, monthPartsInZone } from "@/lib/utils";
 
 // GET /api/budgets/suggest?months=6&month=&year=
@@ -25,16 +26,21 @@ export const GET = safe(async (request: NextRequest) => {
   }
 
   const { gte, lt } = monthRangeBack(anchorYear, anchorMonth, months);
-  const txs = await prisma.personalTransaction.findMany({
-    where: { parentId: null, date: { gte, lt } },
-    select: { amount: true, category: true, date: true },
-  });
+  const [txs, taxonomy] = await Promise.all([
+    prisma.personalTransaction.findMany({
+      where: { parentId: null, date: { gte, lt } },
+      select: { amount: true, category: true, date: true },
+    }),
+    getTaxonomy(),
+  ]);
 
   const suggestions = suggestFromTransactions(
     txs.map((t) => ({ amount: Number(t.amount), category: t.category, date: t.date })),
     anchorYear,
     anchorMonth,
-    months
+    months,
+    taxonomy.categoryGroup,
+    taxonomy.groupBehavior
   );
   return Response.json({ anchorMonth, anchorYear, months, suggestions });
 });

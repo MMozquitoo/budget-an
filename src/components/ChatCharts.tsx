@@ -91,13 +91,13 @@ export function TrendsChart({ data }: { data: TrendPoint[] }) {
 
 /** Output of the agent's getSummary tool. */
 export interface SummaryToolOutput {
-  byGroup?: Array<{ group: string; label: string; total: number }>;
+  byGroup?: Array<{ group: string; label: string; total: number; behavior?: string }>;
 }
 
 export function SummaryChart({ data }: { data: SummaryToolOutput }) {
   if (!data?.byGroup || !Array.isArray(data.byGroup)) return null;
   const pieData = data.byGroup
-    .filter((g) => g.group !== "INCOME" && g.group !== "TRANSFER" && g.group !== "BUSINESS" && g.total > 0)
+    .filter((g) => g.behavior !== "income" && g.behavior !== "excluded" && g.total > 0)
     .map((g) => ({ name: g.label, value: Math.round(g.total) }));
 
   if (pieData.length === 0) return null;

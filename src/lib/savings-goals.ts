@@ -7,8 +7,6 @@
  * at read time, computed here from that sum plus the goal's own fields.
  */
 
-import { CATEGORIES_BY_GROUP } from "./utils";
-
 export type GoalHealth = "met" | "on-track" | "behind" | "overdue";
 
 export interface SavingsGoalLike {
@@ -30,13 +28,17 @@ export interface GoalProgress {
   expectedByNow: number;
 }
 
-/** Categories whose transactions count toward a goal: the one chosen, or the whole SAVINGS group. */
-export function categoriesForGoal(category: string | null): string[] {
-  return category ? [category] : CATEGORIES_BY_GROUP.SAVINGS;
+/**
+ * Categories whose transactions count toward a goal: the one chosen, or the
+ * whole SAVINGS group. `categoriesByGroup` comes from the dynamic taxonomy
+ * (lib/taxonomy.ts).
+ */
+export function categoriesForGoal(category: string | null, categoriesByGroup: Record<string, string[]>): string[] {
+  return category ? [category] : (categoriesByGroup.SAVINGS ?? []);
 }
 
-export function isSavingsCategory(category: string): boolean {
-  return CATEGORIES_BY_GROUP.SAVINGS.includes(category);
+export function isSavingsCategory(category: string, categoriesByGroup: Record<string, string[]>): boolean {
+  return (categoriesByGroup.SAVINGS ?? []).includes(category);
 }
 
 const MS_PER_DAY = 86_400_000;

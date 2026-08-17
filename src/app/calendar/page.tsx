@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentMonth, getCurrentYear, monthRange } from "@/lib/utils";
+import { getTaxonomy } from "@/lib/taxonomy";
 import CalendarClient from "./CalendarClient";
 
 export default async function CalendarPage({
@@ -11,18 +12,21 @@ export default async function CalendarPage({
   const month = Number(sp.month) || getCurrentMonth();
   const year = Number(sp.year) || getCurrentYear();
 
-  const transactions = await prisma.personalTransaction.findMany({
-    where: { date: monthRange(year, month), parentId: null },
-    orderBy: { date: "asc" },
-    select: {
-      id: true,
-      date: true,
-      amount: true,
-      group: true,
-      category: true,
-      description: true,
-    },
-  });
+  const [transactions, taxonomy] = await Promise.all([
+    prisma.personalTransaction.findMany({
+      where: { date: monthRange(year, month), parentId: null },
+      orderBy: { date: "asc" },
+      select: {
+        id: true,
+        date: true,
+        amount: true,
+        group: true,
+        category: true,
+        description: true,
+      },
+    }),
+    getTaxonomy(),
+  ]);
 
   return (
     <div>
@@ -42,6 +46,7 @@ export default async function CalendarPage({
         }))}
         month={month}
         year={year}
+        taxonomy={taxonomy}
       />
     </div>
   );

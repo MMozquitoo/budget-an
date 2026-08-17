@@ -1,11 +1,6 @@
 import Link from "next/link";
-import {
-  formatCurrency,
-  formatCurrencyDecimal,
-  cn,
-  GROUP_COLORS,
-  CATEGORY_LABELS,
-} from "@/lib/utils";
+import { formatCurrency, formatCurrencyDecimal, cn } from "@/lib/utils";
+import { getTaxonomy } from "@/lib/taxonomy";
 import type { RecurringSeries } from "@/lib/recurring";
 import { getRecurringData } from "@/lib/recurring-data";
 import { Repeat, Calendar, TrendingUp, ArrowUpRight, ArrowDownRight, PauseCircle } from "lucide-react";
@@ -24,7 +19,11 @@ export default async function SubscriptionsPage({
 }) {
   const { all } = await searchParams;
   const showInactive = all === "true";
-  const { series, summary } = await getRecurringData(18, showInactive);
+  const [{ series, summary }, taxonomy] = await Promise.all([
+    getRecurringData(18, showInactive),
+    getTaxonomy(),
+  ]);
+  const { groupColors: GROUP_COLORS, categoryLabels: CATEGORY_LABELS } = taxonomy;
 
   const byCategory = series.reduce((acc, s) => {
     (acc[s.category] ||= []).push(s);

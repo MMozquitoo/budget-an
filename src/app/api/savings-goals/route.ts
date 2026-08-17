@@ -1,21 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { TransactionCategory } from "@/generated/prisma/client";
 import { safe, badRequest, toFiniteNumber, toValidDate } from "@/lib/api";
 import { isCategoryInGroup } from "@/lib/rules";
 import { categoriesForGoal, buildGoalReport } from "@/lib/savings-goals";
+import { getTaxonomy } from "@/lib/taxonomy";
 
 // GET /api/savings-goals → every goal with progress derived from transactions.
 export const GET = safe(async () => {
   const goals = await prisma.savingsGoal.findMany();
   if (goals.length === 0) return Response.json({ goals: [] });
 
+  const taxonomy = await getTaxonomy();
+
   const withSaved = await Promise.all(
     goals.map(async (g) => {
       const agg = await prisma.personalTransaction.aggregate({
         where: {
           parentId: null,
-          category: { in: categoriesForGoal(g.category) as TransactionCategory[] },
+          category: { in: categoriesForGoal(g.category, taxonomy.categoriesByGroup) },
           date: { gte: g.startDate },
         },
         _sum: { amount: true },
@@ -56,12 +58,13 @@ export const POST = safe(async (request: NextRequest) => {
   const startDate = body.startDate ? toValidDate(body.startDate) : new Date();
   if (!startDate) return badRequest("startDate invalide");
 
-  let category: TransactionCategory | null = null;
+  let category: string | null = null;
   if (body.category !== undefined && body.category !== null && body.category !== "") {
-    if (!isCategoryInGroup("SAVINGS", body.category)) {
+    const taxonomy = await getTaxonomy();
+    if (!isCategoryInGroup("SAVINGS", body.category, taxonomy.categoriesByGroup)) {
       return badRequest(`${body.category} n'est pas une catégorie d'épargne`);
     }
-    category = body.category as TransactionCategory;
+    category = body.category as string;
   }
 
   const goal = await prisma.savingsGoal.create({

@@ -45,6 +45,17 @@ export function isEnumValue(
   return typeof value === "string" && Object.values(enumObj).includes(value);
 }
 
+/**
+ * Validate that `value` is one of the (own, enumerable) keys of a lookup map —
+ * e.g. the dynamic taxonomy's groupLabels/categoryLabels (lib/taxonomy.ts),
+ * which replaced the old TransactionGroup/TransactionCategory Prisma enums.
+ * Same prototype-pollution guard as isEnumValue, just checking keys instead
+ * of values.
+ */
+export function isValidKey(value: unknown, keys: Record<string, unknown>): boolean {
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(keys, value);
+}
+
 /** Coerce to a finite number, or return undefined if not a valid number. */
 export function toFiniteNumber(value: unknown): number | undefined {
   if (value === null || value === undefined || value === "") return undefined;

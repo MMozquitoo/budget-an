@@ -11,7 +11,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { formatCurrency, GROUP_LABELS } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 interface MonthData {
   year: number;
@@ -85,7 +85,7 @@ export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
   );
 }
 
-export function GroupTrendChart({ data }: { data: MonthData[] }) {
+export function GroupTrendChart({ data, groupLabels }: { data: MonthData[]; groupLabels: Record<string, string> }) {
   const groups = ["FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED"];
 
   const chartData = data.map((d) => {
@@ -93,7 +93,7 @@ export function GroupTrendChart({ data }: { data: MonthData[] }) {
       name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
     };
     for (const g of groups) {
-      point[GROUP_LABELS[g]] = d.byGroup[g] || 0;
+      point[groupLabels[g]] = d.byGroup[g] || 0;
     }
     return point;
   });
@@ -109,7 +109,7 @@ export function GroupTrendChart({ data }: { data: MonthData[] }) {
           <Line
             key={g}
             type="monotone"
-            dataKey={GROUP_LABELS[g]}
+            dataKey={groupLabels[g]}
             stroke={GROUP_CHART_COLORS[g]}
             strokeWidth={2}
             dot={{ r: 3 }}

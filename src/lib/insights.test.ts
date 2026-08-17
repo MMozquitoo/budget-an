@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { categoryMovements, savingsTrend, type MonthPoint } from "./insights";
+import { categoryMovements as categoryMovementsRaw, savingsTrend, type MonthPoint } from "./insights";
+import { DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR } from "./test-taxonomy";
+
+const categoryMovements = (series: MonthPoint[], minDelta?: number) =>
+  categoryMovementsRaw(series, DEFAULT_CATEGORY_GROUP, DEFAULT_GROUP_BEHAVIOR, minDelta);
 
 const point = (
   key: string,

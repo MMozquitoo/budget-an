@@ -1,11 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { aggregate, topCategories } from "./summary";
+import { aggregate as aggregateRaw, topCategories } from "./summary";
+import { DEFAULT_GROUP_BEHAVIOR } from "./test-taxonomy";
 
 const tx = (group: string, category: string, amount: number) => ({
   group,
   category,
   amount,
 });
+
+const aggregate = (transactions: ReturnType<typeof tx>[]) =>
+  aggregateRaw(transactions, DEFAULT_GROUP_BEHAVIOR);
 
 describe("aggregate", () => {
   it("splits inflow, consumed money and outflow", () => {

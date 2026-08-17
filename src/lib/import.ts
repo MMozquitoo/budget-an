@@ -155,7 +155,11 @@ export interface PrepareResult {
  * built-in mapping; sign decides direction (money-in on an expense = refund,
  * money-out on income = reversal). Internal transfers and invalid rows are dropped.
  */
-export function prepareRows(rows: Record<string, string>[], rules: RuleLike[]): PrepareResult {
+export function prepareRows(
+  rows: Record<string, string>[],
+  rules: RuleLike[],
+  categoriesByGroup: Record<string, string[]>
+): PrepareResult {
   const prepared: PreparedRow[] = [];
   let skippedTransfer = 0;
   let skippedInvalid = 0;
@@ -177,7 +181,7 @@ export function prepareRows(rows: Record<string, string>[], rules: RuleLike[]): 
     const notes = `${account} | ${cat} > ${sub}`;
     const key = `${cat} > ${sub}`;
 
-    const matched = classify(rules, { description, notes });
+    const matched = classify(rules, { description, notes }, categoriesByGroup);
     const mapping = matched
       ? ([matched.group, matched.category] as [string, string])
       : MAPPING[key] || CATEGORY_FALLBACK[cat];

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { TransactionGroup, TransactionCategory } from "@/generated/prisma/client";
-import { safe, isEnumValue, toFiniteNumber, toValidDate, badRequest } from "@/lib/api";
+import { safe, isValidKey, toFiniteNumber, toValidDate, badRequest } from "@/lib/api";
 import { classify, isCategoryInGroup } from "@/lib/rules";
+import { getTaxonomy } from "@/lib/taxonomy";
 import { monthRange } from "@/lib/utils";
 
 export const GET = safe(async (request: NextRequest) => {
@@ -23,9 +23,7 @@ export const GET = safe(async (request: NextRequest) => {
     where.date = monthRange(y, m);
   }
 
-  if (group && group in TransactionGroup) {
-    where.group = group;
-  }
+  if (group && isValidKey(group, (await getTaxonomy()).groupLabels)) where.group = group;
 
   const recurring = sp.get("recurring");
   if (recurring === "true") {
@@ -72,6 +70,8 @@ export const POST = safe(async (request: NextRequest) => {
   // decision, and it outranks any rule that runs over this row later.
   const classifiedByHuman = group !== undefined && category !== undefined;
 
+  const taxonomy = await getTaxonomy();
+
   // No classification supplied → let the rules decide, using the same engine as
   // the import, so a quick manual entry lands where an imported row would.
   if (group === undefined || category === undefined) {
@@ -79,7 +79,7 @@ export const POST = safe(async (request: NextRequest) => {
       where: { active: true },
       orderBy: { priority: "desc" },
     });
-    const match = classify(rules, { description, notes: body.notes });
+    const match = classify(rules, { description, notes: body.notes }, taxonomy.categoriesByGroup);
     if (!match) {
       return badRequest(
         "Aucune règle ne correspond — précise le groupe et la catégorie"
@@ -89,13 +89,13 @@ export const POST = safe(async (request: NextRequest) => {
     category = match.category;
   }
 
-  if (!isEnumValue(group, TransactionGroup)) {
+  if (!isValidKey(group, taxonomy.groupLabels)) {
     return badRequest("Invalid group");
   }
-  if (!isEnumValue(category, TransactionCategory)) {
+  if (!isValidKey(category, taxonomy.categoryLabels)) {
     return badRequest("Invalid category");
   }
-  if (!isCategoryInGroup(group, category)) {
+  if (!isCategoryInGroup(group, category, taxonomy.categoriesByGroup)) {
     return badRequest(
       `La catégorie ${category} n'appartient pas au groupe ${group}`
     );

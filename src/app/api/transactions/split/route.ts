@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { TransactionGroup, TransactionCategory } from "@/generated/prisma/client";
-import { safe, isEnumValue, toFiniteNumber, badRequest } from "@/lib/api";
+import { safe, isValidKey, toFiniteNumber, badRequest } from "@/lib/api";
+import { getTaxonomy } from "@/lib/taxonomy";
 
 export const POST = safe(async (request: NextRequest) => {
   const body = await request.json();
@@ -42,12 +42,13 @@ export const POST = safe(async (request: NextRequest) => {
 
   // Validate every split's amount up front so a missing/NaN amount can't slip
   // past the equality check below (any comparison with NaN is false).
+  const taxonomy = await getTaxonomy();
   const amounts: number[] = [];
   for (const s of splits) {
-    if (!isEnumValue(s.group, TransactionGroup)) {
+    if (!isValidKey(s.group, taxonomy.groupLabels)) {
       return badRequest(`Invalid group: ${s.group}`);
     }
-    if (!isEnumValue(s.category, TransactionCategory)) {
+    if (!isValidKey(s.category, taxonomy.categoryLabels)) {
       return badRequest(`Invalid category: ${s.category}`);
     }
     const amt = toFiniteNumber(s.amount);
@@ -71,8 +72,8 @@ export const POST = safe(async (request: NextRequest) => {
         data: {
           date: parent.date,
           amount: amounts[i],
-          group: s.group as TransactionGroup,
-          category: s.category as TransactionCategory,
+          group: s.group,
+          category: s.category,
           description: s.description || parent.description,
           notes: parent.notes,
           recurring: parent.recurring,

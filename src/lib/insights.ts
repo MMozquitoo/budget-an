@@ -3,9 +3,10 @@
  * recommandation → alerting). Pure, database-free, unit-testable. It turns a
  * month-by-month series into *what changed*: which categories moved most versus
  * their own trailing average, and where the savings rate is heading.
+ *
+ * `categoryGroup`/`groupBehavior` come from the dynamic taxonomy
+ * (lib/taxonomy.ts), passed in explicitly — see budgets.ts for the same pattern.
  */
-
-import { CATEGORY_GROUP } from "./budgets";
 
 export interface MonthPoint {
   key: string; // "YYYY-MM"
@@ -32,6 +33,8 @@ export interface CategoryMovement {
  */
 export function categoryMovements(
   series: MonthPoint[],
+  categoryGroup: Record<string, string>,
+  groupBehavior: Record<string, string>,
   minDelta = 25
 ): CategoryMovement[] {
   if (series.length < 2) return [];
@@ -43,8 +46,9 @@ export function categoryMovements(
 
   const out: CategoryMovement[] = [];
   for (const category of categories) {
-    const group = CATEGORY_GROUP[category];
-    if (!group || group === "INCOME" || group === "TRANSFER" || group === "BUSINESS") continue;
+    const group = categoryGroup[category];
+    const behavior = group ? groupBehavior[group] : undefined;
+    if (!group || behavior === "income" || behavior === "excluded") continue;
 
     const cur = current.byCategory[category] ?? 0;
     const avg = prior.reduce((s, p) => s + (p.byCategory[category] ?? 0), 0) / prior.length;

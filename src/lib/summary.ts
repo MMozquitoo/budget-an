@@ -4,6 +4,12 @@
  * Kept out of the route handler so the money maths is unit-testable without a
  * database, and so the API, the dashboard and the chat agent can never drift
  * into computing the same totals in three slightly different ways.
+ *
+ * `groupBehavior` (group key -> "income"|"expense"|"savings"|"debt"|"excluded")
+ * comes from the dynamic taxonomy (lib/taxonomy.ts) — a group not present in
+ * the map, or marked "excluded" (TRANSFER, BUSINESS, ...), never enters any
+ * total. This is what used to be six named fields hardcoded to the six
+ * original groups; it now works for any group Adrien creates later too.
  */
 
 export interface TxLite {
@@ -16,12 +22,9 @@ export interface Totals {
   byGroup: Record<string, number>;
   byCategory: Record<string, number>;
   totalIncome: number;
-  totalFixedExpense: number;
-  totalVariableExpense: number;
   totalSavings: number;
   totalDebt: number;
-  totalUnexpected: number;
-  /** Money actually consumed: fixed + variable + unexpected. Excludes savings. */
+  /** Money actually consumed: every group behaving as "expense". Excludes savings. */
   totalExpenses: number;
   /** Everything that left the account: expenses + savings + debt. */
   totalOutflow: number;
@@ -31,14 +34,10 @@ export interface Totals {
   transactionCount: number;
 }
 
-/** Groups that count as consumed money (not savings, not debt repayment). */
-export const EXPENSE_GROUPS = [
-  "FIXED_EXPENSE",
-  "VARIABLE_EXPENSE",
-  "UNEXPECTED",
-] as const;
-
-export function aggregate(transactions: TxLite[]): Totals {
+export function aggregate(
+  transactions: TxLite[],
+  groupBehavior: Record<string, string>
+): Totals {
   const byGroup: Record<string, number> = {};
   const byCategory: Record<string, number> = {};
 
@@ -49,26 +48,36 @@ export function aggregate(transactions: TxLite[]): Totals {
     byCategory[t.category] = (byCategory[t.category] || 0) + amt;
   }
 
-  const totalIncome = byGroup["INCOME"] || 0;
-  const totalFixedExpense = byGroup["FIXED_EXPENSE"] || 0;
-  const totalVariableExpense = byGroup["VARIABLE_EXPENSE"] || 0;
-  const totalSavings = byGroup["SAVINGS"] || 0;
-  const totalDebt = byGroup["DEBT"] || 0;
-  const totalUnexpected = byGroup["UNEXPECTED"] || 0;
+  let totalIncome = 0;
+  let totalExpenses = 0;
+  let totalSavings = 0;
+  let totalDebt = 0;
+  for (const [group, amt] of Object.entries(byGroup)) {
+    switch (groupBehavior[group]) {
+      case "income":
+        totalIncome += amt;
+        break;
+      case "expense":
+        totalExpenses += amt;
+        break;
+      case "savings":
+        totalSavings += amt;
+        break;
+      case "debt":
+        totalDebt += amt;
+        break;
+      // "excluded", or a group not in the map: counts nowhere.
+    }
+  }
 
-  const totalExpenses =
-    totalFixedExpense + totalVariableExpense + totalUnexpected;
   const totalOutflow = totalExpenses + totalSavings + totalDebt;
 
   return {
     byGroup,
     byCategory,
     totalIncome,
-    totalFixedExpense,
-    totalVariableExpense,
     totalSavings,
     totalDebt,
-    totalUnexpected,
     totalExpenses,
     totalOutflow,
     balance: totalIncome - totalOutflow,

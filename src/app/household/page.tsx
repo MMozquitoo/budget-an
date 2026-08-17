@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { monthRange } from "@/lib/utils";
 import { getLatestMonth } from "@/lib/dashboard-data";
+import { getTaxonomy } from "@/lib/taxonomy";
 import HouseholdClient from "./HouseholdClient";
 
 // month/year/group/category are all optional in the URL, so nothing forces
@@ -21,10 +22,13 @@ export default async function HouseholdPage({
     year = latest.year;
   }
 
-  const rows = await prisma.personalTransaction.findMany({
-    where: { date: monthRange(year, month), parentId: null },
-    orderBy: { date: "desc" },
-  });
+  const [rows, taxonomy] = await Promise.all([
+    prisma.personalTransaction.findMany({
+      where: { date: monthRange(year, month), parentId: null },
+      orderBy: { date: "desc" },
+    }),
+    getTaxonomy(),
+  ]);
 
   return (
     <HouseholdClient
@@ -42,6 +46,7 @@ export default async function HouseholdPage({
       year={year}
       initialGroup={sp.group ?? "ALL"}
       initialCategory={sp.category ?? "ALL"}
+      taxonomy={taxonomy}
     />
   );
 }

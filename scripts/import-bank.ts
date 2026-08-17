@@ -9,6 +9,7 @@ import {
   csvDateRange,
   type PreparedRow,
 } from "../src/lib/import.js";
+import { getTaxonomy } from "../src/lib/taxonomy.js";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg(process.env.DATABASE_URL!),
@@ -64,8 +65,9 @@ async function main() {
       });
   if (rules.length > 0) console.log(`Loaded ${rules.length} active classification rules`);
 
+  const taxonomy = await getTaxonomy();
   const { prepared, skippedTransfer, skippedInvalid, skippedUnmapped, byRule, unmapped } =
-    prepareRows(rows, rules);
+    prepareRows(rows, rules, taxonomy.categoriesByGroup);
   for (const u of unmapped) console.log(`  UNMAPPED: ${u.key} — ${u.description} (${u.amount})`);
   console.log(
     `\nPrepared ${prepared.length} rows (${byRule} classified by a rule) | skipped: ` +

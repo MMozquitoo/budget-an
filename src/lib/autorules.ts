@@ -40,6 +40,7 @@ function suggestMatchValue(payee: string, samples: string[]): string {
 export function suggestRules(
   manual: ManualTx[],
   existingRules: RuleLike[],
+  categoriesByGroup: Record<string, string[]>,
   minCount = 2
 ): RuleSuggestion[] {
   const groups = new Map<string, ManualTx[]>();
@@ -60,10 +61,11 @@ export function suggestRules(
     if (!txs.every((t) => `${t.group}|${t.category}` === target)) continue;
 
     // Skip if an existing active rule already classifies a sample.
-    const already = classify(existingRules, {
-      description: txs[0].description,
-      notes: txs[0].notes ?? null,
-    });
+    const already = classify(
+      existingRules,
+      { description: txs[0].description, notes: txs[0].notes ?? null },
+      categoriesByGroup
+    );
     if (already) continue;
 
     const samples = txs.slice(0, 3).map((t) => t.description);
