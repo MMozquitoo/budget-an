@@ -208,6 +208,7 @@ enum TransactionGroup {
   DEBT
   UNEXPECTED
   TRANSFER
+  BUSINESS
 }
 
 enum TransactionCategory {
@@ -265,6 +266,10 @@ enum TransactionCategory {
 
   // Virements
   INTERNAL_TRANSFER
+
+  // Compte pro (MCAN)
+  BUSINESS_INCOME
+  BUSINESS_EXPENSE
 }
 
 // ──────────────────────────────────────────────

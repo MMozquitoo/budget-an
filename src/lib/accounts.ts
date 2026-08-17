@@ -27,10 +27,12 @@ export interface AccountTotals {
  * Group transactions by their source account. Rows with no parseable account
  * fall under "Autre". Sorted by outflow, largest first. Internal transfers
  * count toward `count` but not toward income/outflow — money moving between
- * Adrien's own accounts is neither.
+ * Adrien's own accounts is neither. MCAN's own income/expense (group
+ * BUSINESS) is real cash flow for that account — unlike a transfer, it does
+ * split into income/outflow, by category rather than group.
  */
 export function accountBreakdown(
-  transactions: Array<{ notes: string | null; group: string; amount: number }>
+  transactions: Array<{ notes: string | null; group: string; category: string; amount: number }>
 ): AccountTotals[] {
   const map = new Map<string, AccountTotals>();
   for (const t of transactions) {
@@ -43,7 +45,11 @@ export function accountBreakdown(
     const amt = Number(t.amount);
     if (!Number.isFinite(amt)) continue;
     if (t.group === "INCOME") a.income += amt;
-    else if (t.group !== "TRANSFER") a.outflow += amt;
+    else if (t.group === "TRANSFER") { /* no-op */ }
+    else if (t.group === "BUSINESS") {
+      if (t.category === "BUSINESS_INCOME") a.income += amt;
+      else a.outflow += amt;
+    } else a.outflow += amt;
     a.count += 1;
   }
   for (const a of map.values()) a.net = a.income - a.outflow;

@@ -16,7 +16,12 @@ describe("parseAccount", () => {
 });
 
 describe("accountBreakdown", () => {
-  const tx = (notes: string | null, group: string, amount: number) => ({ notes, group, amount });
+  const tx = (notes: string | null, group: string, amount: number, category = "X") => ({
+    notes,
+    group,
+    category,
+    amount,
+  });
 
   it("groups income and outflow per account", () => {
     const rows = accountBreakdown([
@@ -55,5 +60,17 @@ describe("accountBreakdown", () => {
     expect(bourso.income).toBe(2000);
     expect(bourso.outflow).toBe(100);
     expect(bourso.count).toBe(3);
+  });
+
+  it("splits a business account's own income and expense by category", () => {
+    const rows = accountBreakdown([
+      tx("MCAN | Ventes > Client", "BUSINESS", 3000, "BUSINESS_INCOME"),
+      tx("MCAN | Tech > Hébergement", "BUSINESS", 28.67, "BUSINESS_EXPENSE"),
+    ]);
+    const mcan = rows.find((r) => r.account === "MCAN")!;
+    expect(mcan.income).toBe(3000);
+    expect(mcan.outflow).toBe(28.67);
+    expect(mcan.net).toBeCloseTo(2971.33);
+    expect(mcan.count).toBe(2);
   });
 });

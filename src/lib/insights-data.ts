@@ -51,7 +51,7 @@ export async function computeInsights(
     prisma.personalTransaction.findMany({
       where: {
         parentId: null,
-        group: { notIn: ["INCOME", "TRANSFER"] },
+        group: { notIn: ["INCOME", "TRANSFER", "BUSINESS"] },
         date: { gte: monthRange(subStart.year, subStart.month).gte, lt: anchorLt },
       },
       select: { id: true, date: true, amount: true, group: true, category: true, description: true },
@@ -73,7 +73,7 @@ export async function computeInsights(
     b.byCategory[t.category] = (b.byCategory[t.category] ?? 0) + amt;
     if (t.group === "INCOME") b.income += amt;
     else if (t.group === "SAVINGS") b.savings += amt;
-    else if (t.group !== "TRANSFER") b.expenses += amt;
+    else if (t.group !== "TRANSFER" && t.group !== "BUSINESS") b.expenses += amt;
   }
   const series = [...buckets.values()];
   const anchorPoint = series[series.length - 1];

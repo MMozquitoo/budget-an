@@ -17,10 +17,15 @@ export const CATEGORY_GROUP: Record<string, string> = Object.fromEntries(
   )
 );
 
-/** Categories that can hold a budget — everything except income and transfers. */
+/** Categories that can hold a budget — everything except income, transfers and MCAN's own cash flow. */
 export function isBudgetable(category: string): boolean {
   const group = CATEGORY_GROUP[category];
-  return group !== undefined && group !== "INCOME" && group !== "TRANSFER";
+  return (
+    group !== undefined &&
+    group !== "INCOME" &&
+    group !== "TRANSFER" &&
+    group !== "BUSINESS"
+  );
 }
 
 export type BudgetDirection = "cap" | "goal";

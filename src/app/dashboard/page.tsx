@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ArrowLeftRight,
+  Building2,
   Wallet,
   TrendingDown,
   PiggyBank,
@@ -48,6 +49,7 @@ const GROUP_ICONS: Record<string, typeof Wallet> = {
   DEBT: CreditCard,
   UNEXPECTED: AlertTriangle,
   TRANSFER: ArrowLeftRight,
+  BUSINESS: Building2,
 };
 
 function deltaIcon(current: number, previous: number) {
@@ -225,7 +227,7 @@ export default async function Dashboard({
                 </span>
               </Link>
 
-              {group !== "INCOME" && group !== "TRANSFER" && data.totalIncome > 0 && (
+              {group !== "INCOME" && group !== "TRANSFER" && group !== "BUSINESS" && data.totalIncome > 0 && (
                 <div className="mb-4">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>{pct.toFixed(0)}% des revenus</span>

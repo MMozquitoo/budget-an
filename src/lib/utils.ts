@@ -140,6 +140,7 @@ export const GROUP_LABELS: Record<string, string> = {
   DEBT: "Dettes",
   UNEXPECTED: "Imprévus",
   TRANSFER: "Virements internes",
+  BUSINESS: "Compte pro (MCAN)",
 };
 
 export const GROUP_COLORS: Record<string, { bg: string; text: string; dot: string; border: string }> = {
@@ -150,6 +151,7 @@ export const GROUP_COLORS: Record<string, { bg: string; text: string; dot: strin
   DEBT:             { bg: "bg-red-50",      text: "text-red-700",      dot: "bg-red-500",      border: "border-red-200" },
   UNEXPECTED:       { bg: "bg-orange-50",   text: "text-orange-700",   dot: "bg-orange-500",   border: "border-orange-200" },
   TRANSFER:         { bg: "bg-slate-50",    text: "text-slate-700",    dot: "bg-slate-500",    border: "border-slate-200" },
+  BUSINESS:         { bg: "bg-indigo-50",   text: "text-indigo-700",   dot: "bg-indigo-500",   border: "border-indigo-200" },
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -201,6 +203,9 @@ export const CATEGORY_LABELS: Record<string, string> = {
   UNPLANNED: "Dépenses imprévues",
   // Virements
   INTERNAL_TRANSFER: "Virement interne",
+  // Compte pro (MCAN)
+  BUSINESS_INCOME: "Entrées MCAN",
+  BUSINESS_EXPENSE: "Sorties MCAN",
 };
 
 export const CATEGORIES_BY_GROUP: Record<string, string[]> = {
@@ -211,7 +216,8 @@ export const CATEGORIES_BY_GROUP: Record<string, string[]> = {
   DEBT: ["CREDIT_CARD", "PERSONAL_LOAN", "INSTALLMENT", "INTEREST", "PENDING_PAYMENT"],
   UNEXPECTED: ["EMERGENCY", "HEALTH", "UNEXPECTED_REPAIR", "FINE", "UNPLANNED"],
   TRANSFER: ["INTERNAL_TRANSFER"],
+  BUSINESS: ["BUSINESS_INCOME", "BUSINESS_EXPENSE"],
 };
 
-export const GROUP_ORDER = ["INCOME", "FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED", "TRANSFER"] as const;
+export const GROUP_ORDER = ["INCOME", "FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED", "TRANSFER", "BUSINESS"] as const;
 

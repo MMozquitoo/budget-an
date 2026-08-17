@@ -147,11 +147,11 @@ export async function getBudgetReport(month: number, year: number) {
 export async function getAccountBreakdown(month: number, year: number) {
   const txs = await prisma.personalTransaction.findMany({
     where: { parentId: null, date: monthRange(year, month) },
-    select: { notes: true, group: true, amount: true },
+    select: { notes: true, group: true, category: true, amount: true },
   });
 
   const accounts = accountBreakdown(
-    txs.map((t) => ({ notes: t.notes, group: t.group, amount: Number(t.amount) }))
+    txs.map((t) => ({ notes: t.notes, group: t.group, category: t.category, amount: Number(t.amount) }))
   );
   return { month, year, accounts };
 }

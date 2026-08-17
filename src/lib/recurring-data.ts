@@ -34,8 +34,8 @@ export async function getRecurringData(months = 18, includeInactive = false) {
       },
       parentId: null,
       // Income is regular too (salary), but it is not a subscription — and
-      // neither is a recurring internal transfer.
-      group: { notIn: ["INCOME", "TRANSFER"] },
+      // neither is a recurring internal transfer or a business cash flow.
+      group: { notIn: ["INCOME", "TRANSFER", "BUSINESS"] },
     },
     select: {
       id: true,

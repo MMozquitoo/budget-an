@@ -44,7 +44,7 @@ export function categoryMovements(
   const out: CategoryMovement[] = [];
   for (const category of categories) {
     const group = CATEGORY_GROUP[category];
-    if (!group || group === "INCOME" || group === "TRANSFER") continue;
+    if (!group || group === "INCOME" || group === "TRANSFER" || group === "BUSINESS") continue;
 
     const cur = current.byCategory[category] ?? 0;
     const avg = prior.reduce((s, p) => s + (p.byCategory[category] ?? 0), 0) / prior.length;
