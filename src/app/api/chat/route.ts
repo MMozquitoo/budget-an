@@ -1,6 +1,6 @@
 import { streamText, convertToModelMessages, isStepCount } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { budgetTools, buildSystemPrompt } from "@/agent/budget-agent";
+import { budgetTools, buildSystemPrompt, getMemoryFacts } from "@/agent/budget-agent";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
@@ -23,16 +23,20 @@ export async function POST(req: Request) {
     return Response.json({ error: "messages doit être un tableau" }, { status: 400 });
   }
 
+  const memoryFacts = await getMemoryFacts();
+
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
     // Cache the (large, mostly-static) system prompt: same content on every
     // message of every conversation, so this is a cache hit after the first
     // request in the window. See the matching tool-side breakpoint on
     // getNetWorth in budget-agent.ts — Anthropic caches everything between
-    // the start of the request and a cache_control marker as one unit.
+    // the start of the request and a cache_control marker as one unit. A new
+    // rememberFact/forgetFact call changes this string, so it naturally busts
+    // the cache only when the facts actually change.
     instructions: {
       role: "system",
-      content: buildSystemPrompt(),
+      content: buildSystemPrompt(new Date(), memoryFacts),
       providerOptions: {
         anthropic: { cacheControl: { type: "ephemeral", ttl: "1h" } },
       },

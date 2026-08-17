@@ -200,6 +200,22 @@ model Message {
   @@map("messages")
 }
 
+/// Facts the agent should know in every future conversation — the household's
+/// holding structure, what a recurring counterparty actually is, a standing
+/// target. Small and always loaded in full into the system prompt (see
+/// lib/agent-memory.ts); no semantic search needed at this scale. Written
+/// only via the rememberFact/forgetFact tools, and only when Adrien confirms
+/// — same rule as every other agent write (see the SÉCURITÉ block in
+/// budget-agent.ts's system prompt).
+model AgentMemory {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("agent_memory")
+}
+
 enum TransactionGroup {
   INCOME
   FIXED_EXPENSE
