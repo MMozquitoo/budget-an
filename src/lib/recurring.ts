@@ -154,6 +154,13 @@ export function detectRecurring(
 
     if (!detected && !manuallyFlagged) continue;
 
+    // A single occurrence (only shown at all because it was hand-flagged
+    // "recurring") has zero gaps to infer a cadence from — classifyCadence's
+    // empty-gaps default is MONTHLY, which turned one large one-off transfer
+    // into a false "10 000 €/mois" alert. With no second data point there is
+    // no basis for any monthly figure, so don't project one.
+    const singleOccurrence = monthIndexes.length < 2;
+
     // Per-month totals: a subscription billed twice in one month still costs
     // the sum of both charges that month.
     const monthlyAmounts = monthIndexes.map((idx) =>
@@ -189,8 +196,8 @@ export function detectRecurring(
       group: last.group,
       category: last.category,
       amount: latestAmount,
-      monthlyEquivalent: latestAmount / cadenceMonths,
-      cadence,
+      monthlyEquivalent: singleOccurrence ? 0 : latestAmount / cadenceMonths,
+      cadence: singleOccurrence ? "IRREGULAR" : cadence,
       cadenceMonths,
       occurrences: monthIndexes.length,
       firstDate: first.dateObj.toISOString().slice(0, 10),

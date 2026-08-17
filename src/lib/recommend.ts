@@ -83,9 +83,11 @@ export function recommend(input: RecommendInput): Recommendation[] {
     });
   }
 
-  // 3. Dead subscriptions — still charged but inactive.
+  // 3. Dead subscriptions — still charged but inactive. Skip anything with no
+  // quantifiable monthly cost (e.g. a single one-off transfer hand-flagged
+  // recurring) — "résilie ça, ça te coûte ~0 €/mois" isn't a real recommendation.
   for (const sub of input.subscriptions ?? []) {
-    if (sub.active) continue;
+    if (sub.active || sub.monthlyEquivalent <= 0) continue;
     recs.push({
       type: "dead_subscription",
       severity: sub.monthlyEquivalent >= 10 ? "high" : "medium",

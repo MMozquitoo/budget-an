@@ -78,6 +78,18 @@ describe("detectRecurring", () => {
     expect(series[0].source).toBe("manual");
   });
 
+  it("does not project a monthly figure from a single flagged occurrence", () => {
+    // A one-off 10 000 € transfer, hand-flagged recurring, with no second
+    // data point — must not read as "10 000 €/mois".
+    const series = detectRecurring(
+      monthly("VIR TO CRISTIAN ALEJANDRO M", [[2025, 8, 10000]], { recurring: true }),
+      { referenceDate: REF }
+    );
+    expect(series).toHaveLength(1);
+    expect(series[0].monthlyEquivalent).toBe(0);
+    expect(series[0].cadence).toBe("IRREGULAR");
+  });
+
   it("normalises a yearly charge to its monthly cost", () => {
     const series = detectRecurring(
       monthly("AMAZON PRIME", [

@@ -67,6 +67,15 @@ describe("recommend", () => {
     expect(hike.estimatedMonthly).toBe(2);
   });
 
+  it("does not flag an inactive series with no quantifiable monthly cost", () => {
+    const recs = recommend({
+      subscriptions: [
+        { description: "VIR TO CRISTIAN ALEJANDRO M", active: false, monthlyEquivalent: 0 },
+      ],
+    });
+    expect(recs.some((r) => r.type === "dead_subscription")).toBe(false);
+  });
+
   it("flags a spending anomaly not already covered by a budget", () => {
     const movements: CategoryMovement[] = [
       { category: "ENTERTAINMENT", group: "VARIABLE_EXPENSE", current: 300, average: 100, delta: 200, deltaPct: 200, direction: "up" },
