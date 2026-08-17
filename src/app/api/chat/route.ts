@@ -25,7 +25,18 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
-    system: buildSystemPrompt(),
+    // Cache the (large, mostly-static) system prompt: same content on every
+    // message of every conversation, so this is a cache hit after the first
+    // request in the window. See the matching tool-side breakpoint on
+    // getNetWorth in budget-agent.ts — Anthropic caches everything between
+    // the start of the request and a cache_control marker as one unit.
+    instructions: {
+      role: "system",
+      content: buildSystemPrompt(),
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral", ttl: "1h" } },
+      },
+    },
     messages: await convertToModelMessages(messages),
     tools: budgetTools,
     stopWhen: isStepCount(5),

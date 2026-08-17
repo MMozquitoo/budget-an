@@ -764,9 +764,16 @@ export const budgetTools = {
     },
   }),
 
+  // Cache breakpoint: Anthropic caches everything from the start of the
+  // request (system prompt + every tool schema) up to and including this
+  // marker. Tools rarely change, so this turns a multi-KB re-send on every
+  // single chat message into a cache hit after the first request.
   getNetWorth: tool({
     description: "Voir le patrimoine net et son évolution",
     inputSchema: z.object({}),
+    providerOptions: {
+      anthropic: { cacheControl: { type: "ephemeral", ttl: "1h" } },
+    },
     execute: async () => {
       const snapshots = await prisma.netWorthSnapshot.findMany({ orderBy: [{ year: "asc" }, { month: "asc" }] });
       return snapshots.map((s) => {
