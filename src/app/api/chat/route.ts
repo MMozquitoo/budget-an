@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages, isStepCount } from "ai";
+import { streamText, convertToModelMessages, isStepCount, pruneMessages } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { buildBudgetTools, buildSystemPrompt, getMemoryFacts } from "@/agent/budget-agent";
 import { getTaxonomy } from "@/lib/taxonomy";
@@ -43,7 +43,18 @@ export async function POST(req: Request) {
         anthropic: { cacheControl: { type: "ephemeral", ttl: "1h" } },
       },
     },
-    messages: await convertToModelMessages(messages),
+    // The client resends the whole conversation on every turn. Old text is
+    // cheap, but old *tool* payloads aren't — a single query call can return
+    // up to 200 transactions as JSON, and without pruning that gets re-sent
+    // (and re-billed) on every subsequent message for the rest of the chat.
+    // Keep full tool detail for the last few exchanges; drop it from
+    // anything older — the assistant's text summary of what it found stays,
+    // only the raw payload goes.
+    messages: pruneMessages({
+      messages: await convertToModelMessages(messages),
+      toolCalls: "before-last-12-messages",
+      emptyMessages: "remove",
+    }),
     tools: buildBudgetTools(taxonomy),
     stopWhen: isStepCount(5),
   });
