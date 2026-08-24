@@ -46,7 +46,8 @@ en curso). Desplegada en Vercel.
   después de una mutación (POST/PUT/DELETE) → `router.refresh()`, nunca estado local
   duplicado. Si la página no lee `searchParams`/cookies, hace falta
   `export const dynamic = "force-dynamic"` o Next la pre-renderiza una vez en build y
-  sirve una foto congelada (pasó en `/net-worth`, `/dashboard`, `/household`, `/rules`).
+  sirve una foto congelada (pasó en `/net-worth`, `/dashboard`, `/household`, `/rules`,
+  `/settings`).
   `components/PageSpinner.tsx` + `loading.tsx` por carpeta = fallback de Suspense.
 - **`lib/*-data.ts`** (`forecast-data`, `insights-data`, `recurring-data`,
   `dashboard-data`): orquestación async que sí toca Prisma (a diferencia de la lógica
@@ -55,9 +56,14 @@ en curso). Desplegada en Vercel.
 
 ## Mapa
 
-- **Páginas:** `/` chat · `/dashboard` résumé · `/household` opérations · `/budgets`
-  (+ objectifs d'épargne) · `/insights` analyse+reco · `/import` · `/calendar` ·
-  `/subscriptions` · `/net-worth` · `/rules` · `/login`.
+- **Páginas:** `/` chat ("Coach financier") · `/dashboard` résumé · `/household`
+  détails · `/subscriptions` abonnements · `/net-worth` patrimoine · `/settings`
+  réglages (pestañas Règles + Import, cada uno reusable también en su ruta propia
+  `/rules` / `/import`) · `/login`.
+- **Fuera del nav pero vivas** (siguen existiendo, solo no están linkeadas):
+  `/budgets` (+ objectifs d'épargne), `/insights` analyse+reco, `/calendar`.
+  Pedido explícito de Adrien 2026-08-23 para simplificar el flujo diario — no
+  borrar estas páginas al tocar código cercano, solo están fuera del menú.
 - **Agente** (`src/agent/budget-agent.ts`): lectura (query/summary/trends/subscriptions/
   netWorth/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
   cashflowForecast/getSavingsGoals) + **escritura** (reclassify, createTransaction,
