@@ -66,7 +66,10 @@ export function normalizeLabel(description: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // strip accents
     .replace(/\d{1,2}[/.-]\d{1,2}([/.-]\d{2,4})?/g, " ") // dates
-    .replace(/\b(carte|cb|vir|virement|prlv|prelevement|paiement|achat)\b/g, " ")
+    .replace(
+      /\b(carte|cb|vir|virement|prlv|prelevement|paiement|achat|wl|sarl|sas|sa|ltd|inc|gmbh|llc|com|bill|videos|fr|uk|eur|irlande|royaume|uni|unis|etats|allemagne|luxembourg|suisse|espagne|italie|belgique|pays|bas|singapour|chypre|malte|pologne)\b/g,
+      " "
+    ) // strip transaction-type verbs and bank/processor boilerplate (legal suffixes, currency/country tags) that fragment the same payee across statements
     .replace(/\brum\s+\S+/g, " ") // SEPA mandate refs
     .replace(/\b[a-z]*\d[a-z\d]*\b/g, " ") // any token containing a digit
     .replace(/[^a-z ]/g, " ")

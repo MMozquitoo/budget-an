@@ -5,15 +5,11 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ListPlus,
-  CalendarDays,
   Repeat,
   TrendingUp,
   Settings,
   MessageCircle,
   Sparkles,
-  Wallet,
-  Lightbulb,
-  Upload,
   LogOut,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -21,21 +17,16 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Opérations", href: "/household", icon: ListPlus },
-  { name: "Budgets", href: "/budgets", icon: Wallet },
-  { name: "Analyse", href: "/insights", icon: Lightbulb },
-  { name: "Calendrier", href: "/calendar", icon: CalendarDays },
+  { name: "Détails", href: "/household", icon: ListPlus },
   { name: "Abonnements", href: "/subscriptions", icon: Repeat },
   { name: "Patrimoine", href: "/net-worth", icon: TrendingUp },
-  { name: "Import", href: "/import", icon: Upload },
-  { name: "Règles", href: "/rules", icon: Settings },
+  { name: "Réglages", href: "/settings", icon: Settings },
 ];
 
 const mobileNav = [
   { name: "Chat", href: "/", icon: MessageCircle },
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Budgets", href: "/budgets", icon: Wallet },
-  { name: "Opér.", href: "/household", icon: ListPlus },
+  { name: "Détails", href: "/household", icon: ListPlus },
   { name: "Abonn.", href: "/subscriptions", icon: Repeat },
   { name: "Patrim.", href: "/net-worth", icon: TrendingUp },
 ];
@@ -67,7 +58,7 @@ export default function Sidebar() {
             )}
           >
             <MessageCircle size={18} />
-            Assistant IA
+            Coach financier
           </Link>
         </div>
 

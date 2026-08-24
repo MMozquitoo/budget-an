@@ -62,11 +62,27 @@ function CustomTooltip({
   );
 }
 
+/**
+ * Trailing months with zero activity everywhere (the current month before
+ * any statement has landed) plunge every line/bar to 0 and read as a broken
+ * chart rather than "no data yet" — drop them instead of plotting a fake 0.
+ */
+function dropTrailingEmptyMonths(data: MonthData[]): MonthData[] {
+  const trimmed = [...data];
+  while (
+    trimmed.length > 0 &&
+    Object.values(trimmed[trimmed.length - 1].byGroup).every((v) => !v)
+  ) {
+    trimmed.pop();
+  }
+  return trimmed;
+}
+
 export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
-  const chartData = data.map((d) => ({
+  const chartData = dropTrailingEmptyMonths(data).map((d) => ({
     name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
-    Revenus: d.byGroup["INCOME"] || 0,
-    Dépenses: (d.byGroup["FIXED_EXPENSE"] || 0) + (d.byGroup["VARIABLE_EXPENSE"] || 0) + (d.byGroup["UNEXPECTED"] || 0),
+    Entrées: d.byGroup["INCOME"] || 0,
+    Sorties: (d.byGroup["FIXED_EXPENSE"] || 0) + (d.byGroup["VARIABLE_EXPENSE"] || 0) + (d.byGroup["UNEXPECTED"] || 0),
     Épargne: d.byGroup["SAVINGS"] || 0,
   }));
 
@@ -77,8 +93,8 @@ export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
         <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="Revenus" fill="#10b981" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Dépenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Entrées" fill="#10b981" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Sorties" fill="#ef4444" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Épargne" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -86,9 +102,9 @@ export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
 }
 
 export function GroupTrendChart({ data, groupLabels }: { data: MonthData[]; groupLabels: Record<string, string> }) {
-  const groups = ["FIXED_EXPENSE", "VARIABLE_EXPENSE", "SAVINGS", "DEBT", "UNEXPECTED"];
+  const groups = ["FIXED_EXPENSE", "VARIABLE_EXPENSE"];
 
-  const chartData = data.map((d) => {
+  const chartData = dropTrailingEmptyMonths(data).map((d) => {
     const point: Record<string, string | number> = {
       name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
     };

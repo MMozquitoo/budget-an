@@ -16,16 +16,12 @@ import {
 import { formatCurrency, cn } from "@/lib/utils";
 import { getTaxonomy } from "@/lib/taxonomy";
 import { IncomeVsExpensesChart, GroupTrendChart } from "@/components/TrendChart";
-import BudgetProgressCard from "@/components/BudgetProgressCard";
-import AccountBreakdownCard from "@/components/AccountBreakdownCard";
 import ForecastCard from "@/components/ForecastCard";
 import DashboardFilters from "./DashboardFilters";
 import {
   getLatestMonth,
   getMonthSummary,
   getMonthlyTrends,
-  getBudgetReport,
-  getAccountBreakdown,
 } from "@/lib/dashboard-data";
 import { computeForecast } from "@/lib/forecast-data";
 
@@ -84,11 +80,9 @@ export default async function Dashboard({
     year = latest.year;
   }
 
-  const [data, trends, budgetReport, accountData, forecast, taxonomy] = await Promise.all([
+  const [data, trends, forecast, taxonomy] = await Promise.all([
     getMonthSummary(month, year),
     getMonthlyTrends(8),
-    getBudgetReport(month, year),
-    getAccountBreakdown(month, year),
     computeForecast(6, 6),
     getTaxonomy(),
   ]);
@@ -189,9 +183,23 @@ export default async function Dashboard({
         </div>
       </div>
 
-      <BudgetProgressCard report={budgetReport} categoryLabels={taxonomy.categoryLabels} />
-
-      <AccountBreakdownCard accounts={accountData.accounts} />
+      {/* Trend Charts */}
+      {trends && trends.length > 1 && (
+        <div className="mb-6 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Entrées vs Sorties
+            </h2>
+            <IncomeVsExpensesChart data={trends} />
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Évolution par groupe
+            </h2>
+            <GroupTrendChart data={trends} groupLabels={taxonomy.groupLabels} />
+          </div>
+        </div>
+      )}
 
       <ForecastCard data={forecast} />
 
@@ -279,24 +287,6 @@ export default async function Dashboard({
         })}
       </div>
 
-      {/* Trend Charts */}
-      {trends && trends.length > 1 && (
-        <div className="mb-6 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Revenus vs Dépenses
-            </h2>
-            <IncomeVsExpensesChart data={trends} />
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Évolution par groupe
-            </h2>
-            <GroupTrendChart data={trends} groupLabels={taxonomy.groupLabels} />
-          </div>
-        </div>
-      )}
-
       {data.transactionCount === 0 && (
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
           <Wallet className="mx-auto h-12 w-12 text-gray-300" />
@@ -304,7 +294,7 @@ export default async function Dashboard({
             Aucune opération ce mois
           </h3>
           <p className="mt-2 text-sm text-gray-400">
-            Va sur <a href="/household" className="text-indigo-600 underline">Opérations</a> pour ajouter tes revenus et dépenses.
+            Va sur <a href="/household" className="text-indigo-600 underline">Détails</a> pour ajouter tes revenus et dépenses.
           </p>
         </div>
       )}

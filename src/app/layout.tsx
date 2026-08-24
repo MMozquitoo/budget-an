@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Budget AN",
-  description: "Assistant financier personnel",
+  description: "Coach financier personnel",
 };
 
 export const viewport: Viewport = {

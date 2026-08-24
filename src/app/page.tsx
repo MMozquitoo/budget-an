@@ -101,23 +101,11 @@ export default function ChatPage() {
       .catch(() => {});
   }, []);
 
-  // On mount: load the history list and resume the last conversation, if any.
+  // On mount: load the history list only — every visit starts a fresh
+  // conversation. Past conversations stay reachable from "Historique".
   useEffect(() => {
     loadConversations();
-    const last = typeof window !== "undefined" ? localStorage.getItem("currentConversation") : null;
-    if (!last) return;
-    fetch(`/api/conversations/${last}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((c) => {
-        if (c?.messages?.length) {
-          setMessages(c.messages as Parameters<typeof setMessages>[0]);
-          setConversationId(last);
-          savedSigRef.current = c.messages.map((m: { id?: string }) => m.id).join(",");
-        } else if (typeof window !== "undefined") {
-          localStorage.removeItem("currentConversation");
-        }
-      })
-      .catch(() => {});
+    if (typeof window !== "undefined") localStorage.removeItem("currentConversation");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -236,7 +224,7 @@ export default function ChatPage() {
               Budget AN
             </h1>
             <p className="mt-1 text-center text-sm text-gray-400 max-w-xs">
-              Ton assistant financier. Demande ce dont tu as besoin.
+              Ton coach financier. Demande ce dont tu as besoin.
             </p>
 
             <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-3">
@@ -371,7 +359,6 @@ export default function ChatPage() {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Pose une question sur tes finances..."
-            disabled={isStreaming}
             rows={1}
             className="max-h-32 flex-1 resize-none overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 transition-all"
           />

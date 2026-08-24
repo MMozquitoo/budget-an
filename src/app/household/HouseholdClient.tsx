@@ -125,7 +125,7 @@ export default function HouseholdClient({
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Opérations</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Détails</h1>
           <p className="text-sm text-gray-500">
             Enregistre et classe tes revenus, dépenses et épargne
           </p>
