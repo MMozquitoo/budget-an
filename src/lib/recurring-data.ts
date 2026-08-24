@@ -50,6 +50,7 @@ export async function getRecurringData(months = 18, includeInactive = false) {
       group: true,
       category: true,
       description: true,
+      displayName: true,
       recurring: true,
     },
     orderBy: { date: "asc" },

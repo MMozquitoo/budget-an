@@ -74,7 +74,7 @@ export const POST = safe(async (request: NextRequest) => {
           amount: amounts[i],
           group: s.group,
           category: s.category,
-          description: s.description || parent.description,
+          description: s.description || parent.displayName || parent.description,
           notes: parent.notes,
           recurring: parent.recurring,
           parentId: parent.id,

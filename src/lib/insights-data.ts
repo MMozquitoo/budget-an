@@ -54,7 +54,7 @@ export async function computeInsights(
         group: { notIn: nonSpendGroups },
         date: { gte: monthRange(subStart.year, subStart.month).gte, lt: anchorLt },
       },
-      select: { id: true, date: true, amount: true, group: true, category: true, description: true },
+      select: { id: true, date: true, amount: true, group: true, category: true, description: true, displayName: true },
       orderBy: { date: "asc" },
     }),
   ]);

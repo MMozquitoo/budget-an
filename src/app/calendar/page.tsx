@@ -23,6 +23,7 @@ export default async function CalendarPage({
         group: true,
         category: true,
         description: true,
+        displayName: true,
       },
     }),
     getTaxonomy(),
@@ -42,7 +43,7 @@ export default async function CalendarPage({
           amount: Number(t.amount),
           group: t.group,
           category: t.category,
-          description: t.description,
+          description: t.displayName ?? t.description,
         }))}
         month={month}
         year={year}

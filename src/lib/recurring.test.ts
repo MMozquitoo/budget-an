@@ -181,6 +181,18 @@ describe("detectRecurring", () => {
     expect(detectRecurring([], { referenceDate: REF })).toEqual([]);
   });
 
+  it("shows the displayName override instead of the raw description, but still groups by the raw description", () => {
+    const rows = monthly("FULLI - MOBILIS 4821", [
+      [2026, 4, 45.5],
+      [2026, 5, 45.5],
+      [2026, 6, 54.4],
+    ]).map((t, i) => (i === 2 ? { ...t, displayName: "Fulli" } : t));
+    const series = detectRecurring(rows, { referenceDate: REF });
+    expect(series).toHaveLength(1);
+    expect(series[0].description).toBe("Fulli");
+    expect(series[0].occurrences).toBe(3);
+  });
+
   it("sorts by monthly cost, most expensive first", () => {
     const series = detectRecurring(
       [

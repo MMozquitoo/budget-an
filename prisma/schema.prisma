@@ -61,6 +61,12 @@ model PersonalTransaction {
   group       String
   category    String
   description String
+  /// Human-chosen display label, shown instead of `description` everywhere
+  /// Adrien sees a transaction. `description` itself is never touched by a
+  /// rename — it's the raw bank text the import dedup fingerprint and the
+  /// rule engine key off, and rewriting it would let a re-imported statement
+  /// duplicate this row. Set via the renameTransaction agent tool.
+  displayName String?
   notes       String?
   recurring   Boolean             @default(false)
   /// Set when a human chose this classification — in the chat, in the form, or

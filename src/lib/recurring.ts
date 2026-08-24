@@ -21,6 +21,8 @@ export interface RecurringInput {
   group: string;
   category: string;
   description: string;
+  /** Human-chosen override — shown instead of `description`, never used for grouping. */
+  displayName?: string | null;
   recurring?: boolean;
 }
 
@@ -195,7 +197,7 @@ export function detectRecurring(
 
     series.push({
       key,
-      description: last.description,
+      description: last.displayName || last.description,
       group: last.group,
       category: last.category,
       amount: latestAmount,

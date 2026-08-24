@@ -38,7 +38,7 @@ export default async function HouseholdPage({
         amount: Number(t.amount),
         group: t.group,
         category: t.category,
-        description: t.description,
+        description: t.displayName ?? t.description,
         notes: t.notes,
         recurring: t.recurring,
       }))}

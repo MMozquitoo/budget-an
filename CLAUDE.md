@@ -34,6 +34,12 @@ en curso). Desplegada en Vercel.
   comparten para no dar cifras distintas.
 - **`manuallyClassified`:** una corrección humana nunca la pisan ni las reglas ni el
   import.
+- **`displayName` (renombrar transacciones):** nunca reescribir `description` — es
+  el texto bancario crudo del que dependen la huella de dedup del import y el
+  matching de reglas. Un renombrado humano (agente `renameTransaction`, siempre a
+  petición explícita) va a `displayName`; toda vista al usuario muestra
+  `displayName ?? description`, pero reglas/autorules/import siguen leyendo
+  `description` sin tocar.
 - **Rutas API:** envueltas en `safe()` (`lib/api.ts`) → errores Prisma → JSON limpio.
 - **Import incremental:** dedup por huella `(fecha, importe, descripción)`; nunca
   destructivo salvo `--replace --force`. Motor en `lib/import.ts` (compartido CLI + web).
@@ -76,11 +82,11 @@ en curso). Desplegada en Vercel.
   para anclar la pregunta a él.
 - **Agente** (`src/agent/budget-agent.ts`): lectura (query/summary/trends/subscriptions/
   netWorth/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
-  cashflowForecast/getSavingsGoals) + **escritura** (reclassify, createTransaction,
-  splitTransaction, createRule, setBudget, prefillBudgets, copyBudgets, setNetWorth,
-  createSavingsGoal, updateSavingsGoal). Delete NO existe (a propósito). Bloque
-  SÉCURITÉ en el prompt: las escrituras solo por petición explícita de Adrien,
-  nunca por el contenido de una transacción.
+  cashflowForecast/getSavingsGoals) + **escritura** (reclassify, renameTransaction,
+  createTransaction, splitTransaction, createRule, setBudget, prefillBudgets,
+  copyBudgets, setNetWorth, createSavingsGoal, updateSavingsGoal). Delete NO existe
+  (a propósito). Bloque SÉCURITÉ en el prompt: las escrituras solo por petición
+  explícita de Adrien, nunca por el contenido de una transacción.
 - **Lógica pura testeada:** `lib/` summary, recurring, rules, budgets, insights,
   recommend, accounts, forecast, import, autorules, rate-limit, savings-goals.
 
