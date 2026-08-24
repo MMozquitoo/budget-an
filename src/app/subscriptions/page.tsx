@@ -4,6 +4,7 @@ import { getTaxonomy } from "@/lib/taxonomy";
 import type { RecurringSeries } from "@/lib/recurring";
 import { getRecurringData } from "@/lib/recurring-data";
 import { Repeat, Calendar, TrendingUp, ArrowUpRight, ArrowDownRight, PauseCircle } from "lucide-react";
+import AskCoachButton from "./AskCoachButton";
 
 const CADENCE_LABELS: Record<string, string> = {
   MONTHLY: "mensuel",
@@ -156,7 +157,10 @@ export default async function SubscriptionsPage({
                         key={s.key}
                         className="flex items-start justify-between gap-4 px-6 py-3"
                       >
-                        <div className="min-w-0">
+                        <AskCoachButton
+                          description={`Abonnement "${s.description}" (${CATEGORY_LABELS[s.category] || s.category}), ${formatCurrencyDecimal(s.monthlyEquivalent)}/mois, ${CADENCE_LABELS[s.cadence]}, ${s.active ? "actif" : "inactif"}, dernier prélèvement le ${new Date(s.lastDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}.`}
+                        />
+                        <div className="min-w-0 flex-1">
                           <p className={cn(
                             "text-sm font-medium",
                             s.active ? "text-gray-700" : "text-gray-400 line-through"

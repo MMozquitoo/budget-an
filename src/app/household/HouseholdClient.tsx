@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, X, ArrowLeft, Sparkles } from "lucide-react";
 import { formatCurrency, getMonthName, getCurrentYear, cn } from "@/lib/utils";
 import type { Taxonomy } from "@/lib/taxonomy";
+import { useCoachChat } from "@/components/CoachChatProvider";
 
 interface Transaction {
   id: string;
@@ -34,6 +35,7 @@ export default function HouseholdClient({
 }) {
   const { groupOrder: GROUP_ORDER, groupLabels: GROUP_LABELS, groupColors: GROUP_COLORS, categoryLabels: CATEGORY_LABELS, categoriesByGroup: CATEGORIES_BY_GROUP } = taxonomy;
   const router = useRouter();
+  const { askAbout } = useCoachChat();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filterGroup, setFilterGroup] = useState<string>(initialGroup);
@@ -89,6 +91,13 @@ export default function HouseholdClient({
   const handleDelete = async (id: string) => {
     await fetch(`/api/transactions?id=${id}`, { method: "DELETE" });
     router.refresh();
+  };
+
+  const askAboutTransaction = (t: Transaction) => {
+    const date = new Date(t.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    askAbout(
+      `Transaction "${t.description}" du ${date}, ${formatCurrency(t.amount)}, classée ${GROUP_LABELS[t.group]} / ${CATEGORY_LABELS[t.category] || t.category} (id: ${t.id}).`
+    );
   };
 
   // Group totals always reflect the whole month, independent of the active filter.
@@ -451,12 +460,22 @@ export default function HouseholdClient({
                         {t.group === "INCOME" ? "+" : "-"}{formatCurrency(t.amount)}
                       </td>
                       <td className="py-3 text-right">
-                        <button
-                          onClick={() => handleDelete(t.id)}
-                          className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => askAboutTransaction(t)}
+                            title="Demander au coach"
+                            className="rounded p-1 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            title="Supprimer"
+                            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -14,6 +14,7 @@ import {
   History,
   Trash2,
   X,
+  Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCoachChat } from "@/components/CoachChatProvider";
@@ -48,6 +49,8 @@ export default function ChatPanel({
     loadConversation,
     deleteConversation,
     loadConversations,
+    anchor,
+    clearAnchor,
   } = useCoachChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -80,6 +83,12 @@ export default function ChatPanel({
   useEffect(() => {
     if (status === "ready") inputRef.current?.focus();
   }, [status]);
+
+  // Adrien just picked something to ask about (a transaction row, a chart
+  // point) — jump straight into the composer.
+  useEffect(() => {
+    if (anchor) inputRef.current?.focus();
+  }, [anchor]);
 
   const submit = () => {
     if (!input.trim() || status !== "ready") return;
@@ -312,6 +321,18 @@ export default function ChatPanel({
             >
               <RotateCcw className="h-3 w-3" />
               Nouvelle conversation
+            </button>
+          </div>
+        )}
+        {anchor && (
+          <div className={cn("mb-2 flex items-center gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-xs text-indigo-700", !compact && "mx-auto max-w-2xl")}>
+            <Paperclip className="h-3.5 w-3.5 shrink-0" />
+            <span className="flex-1 truncate">{anchor}</span>
+            <button
+              onClick={clearAnchor}
+              className="shrink-0 rounded p-0.5 text-indigo-400 hover:text-indigo-700"
+            >
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         )}

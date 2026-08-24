@@ -43,6 +43,7 @@ function useCoachChatState() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [widgetOpen, setWidgetOpen] = useState(false);
+  const [anchor, setAnchor] = useState<string | null>(null);
   const savedSigRef = useRef("");
 
   const loadConversations = useCallback(() => {
@@ -126,16 +127,31 @@ function useCoachChatState() {
   // send time rather than via useSearchParams() — that hook needs a Suspense
   // boundary in every page that reads it, which this provider (mounted once
   // for the whole app) shouldn't force on pages that don't otherwise need it.
+  // `anchor` (set by askAbout, below) rides along the same way and is
+  // consumed — cleared — as soon as it's actually sent.
   const submit = useCallback(
     (text: string) => {
       if (!text.trim() || status !== "ready") return;
       clearError();
       const search = typeof window !== "undefined" ? window.location.search : "";
-      const pageContext = `Adrien est actuellement sur la page "${pageLabelFor(pathname)}" (${pathname}${search}).`;
+      let pageContext = `Adrien est actuellement sur la page "${pageLabelFor(pathname)}" (${pathname}${search}).`;
+      if (anchor) {
+        pageContext += ` Adrien vient de sélectionner : ${anchor}.`;
+        setAnchor(null);
+      }
       sendMessage({ text }, { body: { pageContext } });
     },
-    [status, clearError, sendMessage, pathname]
+    [status, clearError, sendMessage, pathname, anchor]
   );
+
+  // Called from a page (a transaction row, a chart point, ...) when Adrien
+  // picks something specific to ask about — pins it as context for his next
+  // message and pops the widget open, instead of him having to describe
+  // which row/point he means.
+  const askAbout = useCallback((description: string) => {
+    setAnchor(description);
+    setWidgetOpen(true);
+  }, []);
 
   return {
     messages,
@@ -151,6 +167,9 @@ function useCoachChatState() {
     loadConversations,
     widgetOpen,
     setWidgetOpen,
+    anchor,
+    clearAnchor: () => setAnchor(null),
+    askAbout,
   };
 }
 
