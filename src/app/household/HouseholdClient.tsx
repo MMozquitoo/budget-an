@@ -109,12 +109,12 @@ export default function HouseholdClient({
     router.refresh();
   };
 
-  const askAboutTransaction = (t: Transaction) => {
+  const transactionAnchorText = (t: Transaction) => {
     const date = new Date(t.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-    askAbout(
-      `Transaction "${t.description}" du ${date}, ${formatCurrency(t.amount)}, classée ${GROUP_LABELS[t.group]} / ${CATEGORY_LABELS[t.category] || t.category} (id: ${t.id}).`
-    );
+    return `Transaction "${t.description}" du ${date}, ${formatCurrency(t.amount)}, classée ${GROUP_LABELS[t.group]} / ${CATEGORY_LABELS[t.category] || t.category} (id: ${t.id}).`;
   };
+
+  const askAboutTransaction = (t: Transaction) => askAbout(transactionAnchorText(t));
 
   // Group totals always reflect the whole month, independent of the active filter.
   const groupTotals = GROUP_ORDER.reduce((acc, g) => {
@@ -440,7 +440,7 @@ export default function HouseholdClient({
                 {filtered.map((t) => {
                   const colors = GROUP_COLORS[t.group] || GROUP_COLORS.VARIABLE_EXPENSE;
                   return (
-                    <tr key={t.id}>
+                    <tr key={t.id} data-ask-context={transactionAnchorText(t)}>
                       <td className="py-3 text-gray-500 whitespace-nowrap">
                         {new Date(t.date).toLocaleDateString("fr-FR", {
                           day: "numeric",

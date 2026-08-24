@@ -152,14 +152,15 @@ export default async function SubscriptionsPage({
                     </span>
                   </div>
                   <div className="divide-y divide-gray-50">
-                    {items.map((s) => (
+                    {items.map((s) => {
+                      const anchorText = `Abonnement "${s.description}" (${CATEGORY_LABELS[s.category] || s.category}), ${formatCurrencyDecimal(s.monthlyEquivalent)}/mois, ${CADENCE_LABELS[s.cadence]}, ${s.active ? "actif" : "inactif"}, dernier prélèvement le ${new Date(s.lastDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}.`;
+                      return (
                       <div
                         key={s.key}
+                        data-ask-context={anchorText}
                         className="flex items-start justify-between gap-4 px-6 py-3"
                       >
-                        <AskCoachButton
-                          description={`Abonnement "${s.description}" (${CATEGORY_LABELS[s.category] || s.category}), ${formatCurrencyDecimal(s.monthlyEquivalent)}/mois, ${CADENCE_LABELS[s.cadence]}, ${s.active ? "actif" : "inactif"}, dernier prélèvement le ${new Date(s.lastDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}.`}
-                        />
+                        <AskCoachButton description={anchorText} />
                         <div className="min-w-0 flex-1">
                           <p className={cn(
                             "text-sm font-medium",
@@ -209,7 +210,8 @@ export default async function SubscriptionsPage({
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
