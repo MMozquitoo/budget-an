@@ -63,23 +63,28 @@ function CustomTooltip({
 }
 
 /**
- * Trailing months with zero activity everywhere (the current month before
- * any statement has landed) plunge every line/bar to 0 and read as a broken
- * chart rather than "no data yet" — drop them instead of plotting a fake 0.
+ * Trailing months with no activity in the groups a chart actually plots
+ * (the current month before any statement has landed) plunge every
+ * line/bar to 0 and read as a broken chart rather than "no data yet" —
+ * drop them instead of plotting a fake 0. Checked against the plotted
+ * groups specifically: a month can have data in some other group (e.g. a
+ * transfer) while still being empty for what this chart shows.
  */
-function dropTrailingEmptyMonths(data: MonthData[]): MonthData[] {
+function dropTrailingEmptyMonths(data: MonthData[], plottedGroups: string[]): MonthData[] {
   const trimmed = [...data];
   while (
     trimmed.length > 0 &&
-    Object.values(trimmed[trimmed.length - 1].byGroup).every((v) => !v)
+    plottedGroups.every((g) => !trimmed[trimmed.length - 1].byGroup[g])
   ) {
     trimmed.pop();
   }
   return trimmed;
 }
 
+const INCOME_VS_EXPENSES_GROUPS = ["INCOME", "FIXED_EXPENSE", "VARIABLE_EXPENSE", "UNEXPECTED", "SAVINGS"];
+
 export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
-  const chartData = dropTrailingEmptyMonths(data).map((d) => ({
+  const chartData = dropTrailingEmptyMonths(data, INCOME_VS_EXPENSES_GROUPS).map((d) => ({
     name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
     Entrées: d.byGroup["INCOME"] || 0,
     Sorties: (d.byGroup["FIXED_EXPENSE"] || 0) + (d.byGroup["VARIABLE_EXPENSE"] || 0) + (d.byGroup["UNEXPECTED"] || 0),
@@ -104,7 +109,7 @@ export function IncomeVsExpensesChart({ data }: { data: MonthData[] }) {
 export function GroupTrendChart({ data, groupLabels }: { data: MonthData[]; groupLabels: Record<string, string> }) {
   const groups = ["FIXED_EXPENSE", "VARIABLE_EXPENSE"];
 
-  const chartData = dropTrailingEmptyMonths(data).map((d) => {
+  const chartData = dropTrailingEmptyMonths(data, groups).map((d) => {
     const point: Record<string, string | number> = {
       name: `${MONTH_NAMES[d.month - 1]} ${d.year}`,
     };
