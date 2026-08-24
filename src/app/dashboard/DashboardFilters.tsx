@@ -1,10 +1,25 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getMonthName, getCurrentYear } from "@/lib/utils";
 
 export default function DashboardFilters({ month, year }: { month: number; year: number }) {
   const router = useRouter();
+
+  // month/year are optional in the URL — landing on /dashboard with none
+  // resolves silently server-side to the latest month with data, so the URL
+  // never reflects it. That left the coach's pageContext (read from
+  // window.location) blind to which month was actually showing. Backfill it
+  // once, without a reload or touching back-button history.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("month") || !params.has("year")) {
+      router.replace(`/dashboard?month=${month}&year=${year}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex gap-2">

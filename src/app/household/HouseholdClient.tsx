@@ -57,6 +57,22 @@ export default function HouseholdClient({
     }
   }, [formGroup]);
 
+  // month/year are optional in the URL — landing on /household with none
+  // resolves silently server-side to the latest month with data, so the URL
+  // never reflects it. That left the coach's pageContext (read from
+  // window.location) blind to which month was actually showing. Backfill it
+  // once, without a reload or touching back-button history.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("month") || !params.has("year")) {
+      params.set("month", String(month));
+      params.set("year", String(year));
+      router.replace(`/household?${params.toString()}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, getMonthName, cn } from "@/lib/utils";
 import type { Taxonomy } from "@/lib/taxonomy";
@@ -35,6 +36,21 @@ export default function CalendarClient({
 }) {
   const { groupColors: GROUP_COLORS, groupLabels: GROUP_LABELS, categoryLabels: CATEGORY_LABELS } = taxonomy;
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const router = useRouter();
+
+  // month/year are optional in the URL — landing on /calendar with none
+  // resolves silently server-side to the current month, so the URL never
+  // reflects it. That left the coach's pageContext (read from
+  // window.location) blind to which month was actually showing. Backfill it
+  // once, without a reload or touching back-button history.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("month") || !params.has("year")) {
+      router.replace(`/calendar?month=${month}&year=${year}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
