@@ -64,6 +64,16 @@ en curso). Desplegada en Vercel.
   `/budgets` (+ objectifs d'épargne), `/insights` analyse+reco, `/calendar`.
   Pedido explícito de Adrien 2026-08-23 para simplificar el flujo diario — no
   borrar estas páginas al tocar código cercano, solo están fuera del menú.
+- **Coach flotante:** el chat vive en `CoachChatProvider` (montado una vez en
+  `AuthLayout`, `useChat` + persistencia de conversación) y se renderiza con
+  `ChatPanel` (`variant="full"` en `/`, `variant="compact"` dentro de
+  `CoachWidget`, la burbuja flotante visible en todas las demás páginas —
+  misma conversación, no se reinicia al navegar). Cada turno manda un
+  `pageContext` (ruta + filtros de la URL, leído de `window.location` al
+  enviar, no con `useSearchParams()`) como segundo system message *sin*
+  cache — el prompt grande sigue cacheado aparte. Fase 1 de "coach de
+  verdad" (pedido 2026-08-23); pendiente: seleccionar un dato en pantalla
+  para anclar la pregunta a él.
 - **Agente** (`src/agent/budget-agent.ts`): lectura (query/summary/trends/subscriptions/
   netWorth/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
   cashflowForecast/getSavingsGoals) + **escritura** (reclassify, createTransaction,
