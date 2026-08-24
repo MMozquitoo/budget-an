@@ -14,9 +14,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let messages;
+  let messages, pageContext;
   try {
-    ({ messages } = await req.json());
+    ({ messages, pageContext } = await req.json());
   } catch {
     return Response.json({ error: "Corps de requête invalide" }, { status: 400 });
   }
@@ -26,23 +26,33 @@ export async function POST(req: Request) {
 
   const [memoryFacts, taxonomy] = await Promise.all([getMemoryFacts(), getTaxonomy()]);
 
+  // Cache the (large, mostly-static) system prompt: same content on every
+  // message of every conversation, so this is a cache hit after the first
+  // request in the window. See the matching tool-side breakpoint on the
+  // last tool in buildBudgetTools (budget-agent.ts) — Anthropic caches
+  // everything between the start of the request and a cache_control marker
+  // as one unit. A new rememberFact/forgetFact/createCategory/createGroup
+  // call changes this string, so it naturally busts the cache only when
+  // the facts or taxonomy actually change.
+  const cachedSystemPrompt = {
+    role: "system" as const,
+    content: buildSystemPrompt(new Date(), memoryFacts, taxonomy),
+    providerOptions: {
+      anthropic: { cacheControl: { type: "ephemeral" as const, ttl: "1h" as const } },
+    },
+  };
+  // pageContext (which page/filters Adrien is currently looking at, sent by
+  // CoachChatProvider) rides as a second, uncached system message — it
+  // changes on every request and would bust the cache above if merged into
+  // it, but on its own it's a few tokens, cheap to send uncached.
+  const instructions =
+    typeof pageContext === "string" && pageContext
+      ? [cachedSystemPrompt, { role: "system" as const, content: pageContext }]
+      : cachedSystemPrompt;
+
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
-    // Cache the (large, mostly-static) system prompt: same content on every
-    // message of every conversation, so this is a cache hit after the first
-    // request in the window. See the matching tool-side breakpoint on the
-    // last tool in buildBudgetTools (budget-agent.ts) — Anthropic caches
-    // everything between the start of the request and a cache_control marker
-    // as one unit. A new rememberFact/forgetFact/createCategory/createGroup
-    // call changes this string, so it naturally busts the cache only when
-    // the facts or taxonomy actually change.
-    instructions: {
-      role: "system",
-      content: buildSystemPrompt(new Date(), memoryFacts, taxonomy),
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral", ttl: "1h" } },
-      },
-    },
+    instructions,
     // The client resends the whole conversation on every turn. Old text is
     // cheap, but old *tool* payloads aren't — a single query call can return
     // up to 200 transactions as JSON, and without pruning that gets re-sent
