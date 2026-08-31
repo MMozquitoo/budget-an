@@ -135,6 +135,26 @@ model NetWorthSnapshot {
 }
 
 // ──────────────────────────────────────────────
+// CASH SNAPSHOT — Short-term treasury tracking (comptes courants + livrets
+// disponibles - découverts - encours carte non débité). Deliberately
+// separate from NetWorthSnapshot: same manual-monthly-entry pattern, but a
+// different, more precise definition and a different cadence — editing net
+// worth must never silently move this number. See CLAUDE.md.
+// ──────────────────────────────────────────────
+
+model CashSnapshot {
+  id        String   @id @default(cuid())
+  month     Int
+  year      Int
+  amount    Decimal  @db.Decimal(12, 2) @default(0)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([month, year])
+  @@map("cash_snapshots")
+}
+
+// ──────────────────────────────────────────────
 // BUDGETS — Monthly ceiling (expenses/debt) or target (savings) per category
 // ──────────────────────────────────────────────
 

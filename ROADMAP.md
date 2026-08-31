@@ -28,6 +28,7 @@ solo *alerting*, parcado) — más la autonomía y la memoria.
 | **Chat UX** | Markdown real (react-markdown), input multilínea (Enter envía / Shift+Enter salto). |
 | **Objectifs d'épargne avec date** | Montant cible + fecha límite, seguimiento acumulado (no mensual) derivado de las transacciones de ahorro (categoría elegida o todo el grupo). Sección en `/budgets` + herramientas de chat. |
 | **Server Components (RSC)** | Las 8 páginas (`/subscriptions`, `/calendar`, `/insights`, `/net-worth`, `/dashboard`, `/household`, `/budgets`, `/rules`) migradas de `"use client"` + `useEffect`/`fetch` a Server Components, con islas cliente (`router.push`/`router.refresh`) solo donde hace falta interacción real. Sin cascadas de spinners. Nuevos módulos compartidos `lib/recurring-data.ts` y `lib/dashboard-data.ts`. |
+| **Trésorerie court terme** (2026-08-30) | Nuevo onglet `/treasury`: cash disponible (comptes courants + livrets - découverts - encours carte), saisie manual mensual, comparaisons M-1/M-3 en €/%, tendance 3 mois, courbe 6 mois. Distinto de `/net-worth` a propósito (`CashSnapshot`), mismo patrón (formulario, API, tool de chat `setCashSnapshot`/`getTreasury`). **Pendiente:** el snapshot de fin de agosto queda por saisir a mano (no reconstruible desde las transacciones), y la migración `add_cash_snapshots` por desplegar a prod (`prisma migrate deploy`). |
 
 Cobertura: **114 tests** sobre la lógica de dinero/import/reglas/insights/rate-limit/objectifs.
 

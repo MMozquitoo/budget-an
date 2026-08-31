@@ -63,9 +63,16 @@ en curso). Desplegada en Vercel.
 ## Mapa
 
 - **Páginas:** `/` chat ("Coach financier") · `/dashboard` résumé · `/household`
-  détails · `/subscriptions` abonnements · `/net-worth` patrimoine · `/settings`
-  réglages (pestañas Règles + Import, cada uno reusable también en su ruta propia
-  `/rules` / `/import`) · `/login`.
+  détails · `/subscriptions` abonnements · `/treasury` trésorerie court terme ·
+  `/net-worth` patrimoine · `/settings` réglages (pestañas Règles + Import, cada
+  uno reusable también en su ruta propia `/rules` / `/import`) · `/login`.
+- **`/treasury` (trésorerie court terme, 2026-08-30):** cash disponible (comptes
+  courants + livrets - découverts - encours carte), **distinto** de `/net-worth`
+  a propósito — misma cadencia de saisie manual mensual (`CashSnapshot`,
+  `lib/treasury.ts` cálculo puro + `lib/treasury-data.ts` orquestación), pero
+  fórmula/precisión propias; editar el patrimonio nunca debe mover este número.
+  No hay saldo bancario real en la BD, así que el histórico pasado no es
+  reconstruible desde `PersonalTransaction` — solo saisie manual hacia adelante.
 - **Fuera del nav pero vivas** (siguen existiendo, solo no están linkeadas):
   `/budgets` (+ objectifs d'épargne), `/insights` analyse+reco, `/calendar`.
   Pedido explícito de Adrien 2026-08-23 para simplificar el flujo diario — no
@@ -81,14 +88,14 @@ en curso). Desplegada en Vercel.
   verdad" (pedido 2026-08-23); pendiente: seleccionar un dato en pantalla
   para anclar la pregunta a él.
 - **Agente** (`src/agent/budget-agent.ts`): lectura (query/summary/trends/subscriptions/
-  netWorth/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
+  netWorth/treasury/budgetStatus/accountBreakdown/analyzeSpending/getRecommendations/
   cashflowForecast/getSavingsGoals) + **escritura** (reclassify, renameTransaction,
   createTransaction, splitTransaction, createRule, setBudget, prefillBudgets,
-  copyBudgets, setNetWorth, createSavingsGoal, updateSavingsGoal). Delete NO existe
-  (a propósito). Bloque SÉCURITÉ en el prompt: las escrituras solo por petición
-  explícita de Adrien, nunca por el contenido de una transacción.
+  copyBudgets, setNetWorth, setCashSnapshot, createSavingsGoal, updateSavingsGoal).
+  Delete NO existe (a propósito). Bloque SÉCURITÉ en el prompt: las escrituras solo
+  por petición explícita de Adrien, nunca por el contenido de una transacción.
 - **Lógica pura testeada:** `lib/` summary, recurring, rules, budgets, insights,
-  recommend, accounts, forecast, import, autorules, rate-limit, savings-goals.
+  recommend, accounts, forecast, import, autorules, rate-limit, savings-goals, treasury.
 
 ## Seguridad / ops
 

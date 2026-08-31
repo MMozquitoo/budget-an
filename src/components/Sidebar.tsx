@@ -7,6 +7,7 @@ import {
   ListPlus,
   Repeat,
   TrendingUp,
+  Wallet,
   Settings,
   MessageCircle,
   Sparkles,
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
   { name: "Détails", href: "/household", icon: ListPlus },
   { name: "Abonnements", href: "/subscriptions", icon: Repeat },
+  { name: "Trésorerie", href: "/treasury", icon: Wallet },
   { name: "Patrimoine", href: "/net-worth", icon: TrendingUp },
   { name: "Réglages", href: "/settings", icon: Settings },
 ];
@@ -28,6 +30,7 @@ const mobileNav = [
   { name: "Résumé", href: "/dashboard", icon: LayoutDashboard },
   { name: "Détails", href: "/household", icon: ListPlus },
   { name: "Abonn.", href: "/subscriptions", icon: Repeat },
+  { name: "Trézo", href: "/treasury", icon: Wallet },
   { name: "Patrim.", href: "/net-worth", icon: TrendingUp },
 ];
 
